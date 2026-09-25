@@ -1,0 +1,290 @@
+"""Typed configuration for the training pipeline and the API.
+
+Two kinds of configuration live here:
+
+* **Task/model parameters** (``features.yaml``, ``thresholds.yaml``) — versioned
+  in git, because changing them changes what the model means. Loaded via
+  :func:`load_feature_config` and :func:`load_threshold_config`.
+* **Environment settings** (secrets, connection strings, feature flags) — never
+  in git, read from the environment via :class:`Settings`.
+"""
+
+from __future__ import annotations
+
+import fnmatch
+import functools
+from pathlib import Path
+from typing import Any, Literal
+
+import yaml
+from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Repository root, resolved from this file's location:
+# src/dropout_ews/config/settings.py -> up four levels.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+CONFIG_DIR = Path(__file__).resolve().parent
+
+DATA_DIR = PROJECT_ROOT / "data"
+MODELS_DIR = PROJECT_ROOT / "models"
+REPORTS_DIR = PROJECT_ROOT / "reports"
+
+
+# ---------------------------------------------------------------------------
+# features.yaml
+# ---------------------------------------------------------------------------
+
+
+class TaskConfig(BaseModel):
+    """The prediction task itself. See docs/TASK_SPEC.md."""
+
+    checkpoints: list[int]
+    horizon_days: int = Field(gt=0)
+    drop_censored_rows: bool = True
+    require_minimum_history: bool = True
+
+    @field_validator("checkpoints")
+    @classmethod
+    def _sorted_and_unique(cls, v: list[int]) -> list[int]:
+        if not v:
+            raise ValueError("at least one checkpoint is required")
+        if sorted(set(v)) != v:
+            raise ValueError("checkpoints must be sorted ascending and unique")
+        if v[0] <= 0:
+            raise ValueError("checkpoints must be positive course-relative days")
+        return v
+
+
+class EvaluationConfig(BaseModel):
+    primary_metric: str = "average_precision"
+    target_recall: float = Field(ge=0.0, le=1.0)
+    report_per_checkpoint: bool = True
+    bootstrap_iterations: int = Field(default=1000, ge=0)
+    random_seed: int = 42
+
+
+class FeatureGroups(BaseModel):
+    """The feature allowlist, grouped by kind. See ADR-0003 control #2."""
+
+    level: list[str] = []
+    trend: list[str] = []
+    volatility: list[str] = []
+    recency: list[str] = []
+    relative: list[str] = []
+    composite: list[str] = []
+
+    def all_features(self) -> list[str]:
+        """Flatten the allowlist, preserving group order."""
+        return [
+            name
+            for group in (
+                self.level,
+                self.trend,
+                self.volatility,
+                self.recency,
+                self.relative,
+                self.composite,
+            )
+            for name in group
+        ]
+
+
+class ForbiddenColumns(BaseModel):
+    exact: list[str] = []
+    patterns: list[str] = []
+
+
+class FeatureConfig(BaseModel):
+    task: TaskConfig
+    evaluation: EvaluationConfig
+    features: FeatureGroups
+    forbidden: ForbiddenColumns
+
+    @model_validator(mode="after")
+    def _allowlist_and_forbidden_are_disjoint(self) -> FeatureConfig:
+        """A column cannot be both permitted and forbidden.
+
+        Catches the case where a feature is added to the allowlist without
+        noticing it is outcome-adjacent.
+        """
+        allowed = set(self.features.all_features())
+        clashes = allowed & set(self.forbidden.exact)
+        for pattern in self.forbidden.patterns:
+            clashes |= {name for name in allowed if fnmatch.fnmatch(name, pattern)}
+        if clashes:
+            raise ValueError(
+                f"features present in both the allowlist and the forbidden list: {sorted(clashes)}"
+            )
+        return self
+
+
+# ---------------------------------------------------------------------------
+# thresholds.yaml
+# ---------------------------------------------------------------------------
+
+BandKey = Literal["low", "medium", "high", "critical"]
+
+
+class RiskBand(BaseModel):
+    key: BandKey
+    label: str
+    min_probability: float = Field(ge=0.0, le=1.0)
+    color: str
+    action: str
+
+
+class BandEscalationRule(BaseModel):
+    enabled: bool = True
+    into_bands: list[BandKey] = []
+
+
+class RapidIncreaseRule(BaseModel):
+    enabled: bool = True
+    min_delta: float = Field(default=0.15, gt=0.0, le=1.0)
+
+
+class SustainedIncreaseRule(BaseModel):
+    enabled: bool = True
+    consecutive_checkpoints: int = Field(default=3, ge=2)
+
+
+class AlertRules(BaseModel):
+    band_escalation: BandEscalationRule = BandEscalationRule()
+    rapid_increase: RapidIncreaseRule = RapidIncreaseRule()
+    sustained_increase: SustainedIncreaseRule = SustainedIncreaseRule()
+
+
+class Governance(BaseModel):
+    require_human_review_before_intervention: bool = True
+    auto_punitive_actions_permitted: bool = False
+
+    @field_validator("require_human_review_before_intervention")
+    @classmethod
+    def _human_review_is_mandatory(cls, v: bool) -> bool:
+        # A hard constraint from ADR-0005, deliberately not configurable away:
+        # the config file can express the intent, but it cannot disable it.
+        if not v:
+            raise ValueError(
+                "human review before intervention cannot be disabled (ADR-0005, ETHICS.md)"
+            )
+        return v
+
+    @field_validator("auto_punitive_actions_permitted")
+    @classmethod
+    def _no_punitive_automation(cls, v: bool) -> bool:
+        if v:
+            raise ValueError("automated punitive actions are not permitted (ETHICS.md)")
+        return v
+
+
+class ThresholdConfig(BaseModel):
+    version: int
+    name: str
+    calibrated: bool = False
+    bands: list[RiskBand]
+    alerts: AlertRules = AlertRules()
+    governance: Governance = Governance()
+
+    @model_validator(mode="after")
+    def _bands_are_ordered_and_cover_zero(self) -> ThresholdConfig:
+        if len(self.bands) < 2:
+            raise ValueError("at least two risk bands are required")
+        mins = [b.min_probability for b in self.bands]
+        if mins != sorted(mins) or len(set(mins)) != len(mins):
+            raise ValueError("band min_probability values must be strictly ascending")
+        if mins[0] != 0.0:
+            raise ValueError("the lowest band must start at probability 0.0")
+        return self
+
+    def band_for(self, probability: float) -> RiskBand:
+        """Return the band a calibrated probability falls into.
+
+        Bands are half-open ``[min, next_min)``, with the top band unbounded.
+        """
+        if not 0.0 <= probability <= 1.0:
+            raise ValueError(f"probability must be in [0, 1], got {probability}")
+        selected = self.bands[0]
+        for band in self.bands:
+            if probability >= band.min_probability:
+                selected = band
+            else:
+                break
+        return selected
+
+
+# ---------------------------------------------------------------------------
+# Environment settings
+# ---------------------------------------------------------------------------
+
+
+class Settings(BaseSettings):
+    """Environment-driven settings. See .env.example."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    environment: Literal["local", "ci", "staging", "production"] = "local"
+    log_level: str = "INFO"
+
+    database_url: str = "postgresql+asyncpg://ews:ews@localhost:5432/ews"
+
+    # Auth. The default is unusable on purpose: a real value must be supplied
+    # outside local development, and the validator below enforces that.
+    secret_key: str = "dev-only-insecure-change-me"
+    access_token_expire_minutes: int = 30
+
+    model_dir: Path = MODELS_DIR
+    active_model_version: str | None = None
+
+    # ADR-0005: the LLM case-note feature is optional and off by default. With
+    # it disabled, deterministic templates render and the product is complete.
+    enable_llm_narrative: bool = False
+    anthropic_api_key: str | None = None
+
+    @model_validator(mode="after")
+    def _production_requires_real_secret(self) -> Settings:
+        if self.environment in {"staging", "production"}:
+            if self.secret_key == "dev-only-insecure-change-me":
+                raise ValueError("secret_key must be set outside local development")
+            if len(self.secret_key) < 32:
+                raise ValueError("secret_key must be at least 32 characters")
+        return self
+
+    @model_validator(mode="after")
+    def _llm_flag_requires_key(self) -> Settings:
+        if self.enable_llm_narrative and not self.anthropic_api_key:
+            raise ValueError(
+                "enable_llm_narrative is true but anthropic_api_key is unset; "
+                "leave the flag off to use deterministic narrative templates"
+            )
+        return self
+
+
+# ---------------------------------------------------------------------------
+# Loaders
+# ---------------------------------------------------------------------------
+
+
+def _read_yaml(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a YAML mapping at the top level")
+    return data
+
+
+@functools.cache
+def load_feature_config(path: Path | None = None) -> FeatureConfig:
+    """Load and validate ``features.yaml``."""
+    return FeatureConfig.model_validate(_read_yaml(path or CONFIG_DIR / "features.yaml"))
+
+
+@functools.cache
+def load_threshold_config(path: Path | None = None) -> ThresholdConfig:
+    """Load and validate ``thresholds.yaml``."""
+    return ThresholdConfig.model_validate(_read_yaml(path or CONFIG_DIR / "thresholds.yaml"))
+
+
+@functools.cache
+def get_settings() -> Settings:
+    """Load environment settings (cached)."""
+    return Settings()

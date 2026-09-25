@@ -1,0 +1,62 @@
+# Prediction-task parameters. Authoritative definitions: docs/TASK_SPEC.md
+#
+# These are config, not constants, because ADR-0001 commits us to re-evaluating
+# the horizon against the observed positive rate during EDA (Phase 3).
+
+task:
+  # Course-relative days at which students are scored.
+  checkpoints: [30, 60, 90, 120, 150, 180]
+
+  # Prediction horizon in days. Provisional: ADR-0001 sets the rule for
+  # revisiting this in Phase 3 (keep 30 if day-30 positive rate >= 1.5%,
+  # otherwise report 30 and 60 with 60 as primary).
+  horizon_days: 30
+
+  # Rows whose label window extends past available observation are dropped,
+  # never labelled negative. See TASK_SPEC.md for why.
+  drop_censored_rows: true
+
+  # Students with no engagement or assessment record at or before the
+  # checkpoint are excluded and counted separately in the data card.
+  require_minimum_history: true
+
+evaluation:
+  # Headline metric. ROC-AUC is reported but is optimistic under this degree
+  # of imbalance.
+  primary_metric: average_precision
+
+  # The operating point is selected to hit this positive-class recall on the
+  # validation presentation. Precision and absolute alert volume at this point
+  # are reported alongside; see docs/TASK_SPEC.md.
+  target_recall: 0.80
+
+  # Metrics are always broken out per checkpoint as well as in aggregate.
+  report_per_checkpoint: true
+
+  bootstrap_iterations: 1000
+  random_seed: 42
+
+# Feature allowlist. The feature matrix is built from this list, never by
+# dropping columns from a wide frame: a denylist fails silently when a new
+# outcome-adjacent column appears upstream, an allowlist fails loudly.
+# Populated in Phase 4; the groups below are the planned design.
+features:
+  level: []        # current attendance, GPA, backlogs, recent click counts
+  trend: []        # OLS slopes, deltas vs previous window and vs own baseline
+  volatility: []   # rolling std of marks and weekly engagement
+  recency: []      # consecutive absences, days since last login/submission
+  relative: []     # z-scores vs training-period cohort statistics
+  composite: []    # documented heuristic indices (not learned)
+
+# Columns that must never reach the model. Asserted by
+# tests/ml/test_no_forbidden_features.py against the trained model's feature
+# names. This is a second line of defence behind the allowlist above.
+forbidden:
+  exact:
+    - date_unregistration
+    - withdrawal_day
+    - final_result
+  patterns:
+    - "*_final"
+    - "*_outcome"
+    - "withdraw*"
