@@ -195,26 +195,90 @@ that would need application-time rather than behavioural data.
 
 ---
 
-## Track B — synthetic longitudinal cohort
-
-**Status: not yet built** (remaining Phase 2 work).
+## Track B — synthetic longitudinal cohort — BUILT
 
 | Field | Value |
 |---|---|
-| Source | `scripts/generate_synthetic_cohort.py` |
+| Source | `scripts/generate_synthetic_cohort.py`, `dropout_ews.data.synthetic` |
 | Status | **Synthetic. Not real students.** |
-| Role | Exercises the GPA / backlog / attendance features and UI that OULAD lacks |
+| Role | Exercises the GPA / backlog / subject-attendance features and UI that OULAD lacks |
+| Seed | `20260925` (deterministic; asserted by test) |
+| Students / semesters | 4,000 / 8 |
 
-Planned generating process (published DAG):
+### Generating process (published DAG)
 
 ```
-latent engagement propensity ──┬──> attendance ──┬──> assessment marks ──> backlogs ──┐
-                               └──> study effort ─┘                                    │
-                     prior attainment ────────────────────────────────────────────────>├──> re-enrolment
-                     external shock (financial / health) ────────────────────────────> ┘
+latent engagement propensity ──┬──> attendance ──┬──> subject marks ──> backlogs ──┐
+                               └──> study effort ─┘        │                        │
+                     prior attainment ─────────────────────┴───────────────────────>├──> dropout hazard
+                     external shock (financial / health) ──────────────────────────>│
+                     resilience ───────────────────────────────────────────────────>┘
 ```
 
-Seeded; configurable noise, missingness, and dropout base rate.
+Per-student latent traits: `propensity ~ N(0,1)`, `prior_attainment` (correlated
+0.35 with propensity, because better-prepared students also tend to engage
+more), `resilience ~ N(0,1)`.
+
+Per semester: effort follows an AR(1) process in propensity plus a trajectory
+drift and a decaying external-shock term; attendance derives from effort;
+subject marks from attendance, prior attainment, and fixed per-subject
+difficulty; GPA from marks; backlogs accumulate from failed subjects; the
+dropout hazard is a logistic function of attendance decline against the
+student's own baseline, GPA shortfall, backlog count, shock, and resilience.
+
+### Two design decisions worth noting
+
+**The hazard intercept is calibrated by bisection**, not hand-tuned, so the
+configured dropout rate keeps its meaning when any other coefficient changes.
+Achieved 21.93% against a 22.0% target.
+
+**Shock carry-over is initialised at its stationary mean, not zero.** Starting
+at zero makes it ramp up over the first few semesters, imposing a spurious
+cohort-wide downward drift on attendance and GPA. That artifact would then be
+detected by exactly the trend features this project is testing — making them
+look informative for the wrong reason. This was found by inspecting the
+generated output: before the fix, students assigned an *improving* trajectory
+showed flat-to-declining attendance.
+
+### Generated properties
+
+| Trajectory shape | Students | Dropout rate |
+|---|---:|---:|
+| declining | 1,200 | 30.5% |
+| stable | 2,200 | 19.7% |
+| improving | 600 | 13.0% |
+
+Mean attendance by semester, among students who reach semester 5 (restricted
+this way so survivorship does not confound the comparison):
+
+| Semester | declining | stable | improving |
+|---:|---:|---:|---:|
+| 1 | 73.5 | 77.2 | 80.3 |
+| 3 | 67.8 | 75.5 | 82.6 |
+| 5 | 64.3 | 74.3 | 82.5 |
+
+A negative effort drift is what produces genuinely *declining* students, as
+distinct from students who are uniformly weak throughout. Detecting the former
+is the purpose of the trend features, and a test asserts the specification's
+motivating pattern (roughly 86% → 78% → 63%) is actually generated.
+
+| Table | Rows |
+|---|---:|
+| `students` | 4,000 |
+| `semester_records` | 28,757 |
+| `subject_attendance` | 172,542 |
+| `checkpoints` | 25,634 |
+
+**Checkpoint positive rate: 3.42%** — deliberately in the same regime as
+OULAD's 3.02%. A synthetic cohort with a 30% positive rate would never
+exercise the imbalance handling the real data demands.
+
+Missingness is applied MCAR (~3% attendance, ~5% LMS). Real gaps are rarely
+MCAR, but generating a specific non-random mechanism would bake in an
+assumption about it that we cannot justify; MCAR keeps the imputation path
+exercised without asserting a pattern.
+
+Full output: `reports/synthetic_cohort_report.md`.
 
 **The circularity caveat — read before quoting any synthetic metric.**
 
