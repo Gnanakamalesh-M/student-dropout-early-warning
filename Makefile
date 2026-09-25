@@ -10,7 +10,8 @@ BIN := $(VENV)/Scripts
 PYTHON := $(BIN)/python
 
 .DEFAULT_GOAL := help
-.PHONY: help setup install lint format typecheck test test-fast test-ml test-integration check clean
+.PHONY: help setup install lint format typecheck test test-fast test-ml test-integration \
+        check clean data eda notebooks
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -44,6 +45,21 @@ test-ml: ## Model and leakage tests
 
 test-integration: ## Requires a live PostgreSQL instance
 	$(PYTHON) -m pytest tests/integration -m integration
+
+data: ## Download OULAD, build the population, generate the synthetic cohort
+	$(PYTHON) scripts/download_data.py
+	$(PYTHON) scripts/build_dataset.py
+	$(PYTHON) scripts/generate_synthetic_cohort.py
+
+eda: ## Regenerate every EDA table and figure in reports/
+	$(PYTHON) scripts/run_eda.py
+
+notebooks: ## Execute the EDA notebooks to check they still run
+	# Not part of CI: these need data/raw/oulad/, which is not committed.
+	# Run after `make data`.
+	$(PYTHON) -m nbconvert --to notebook --execute --stdout \
+		--ExecutePreprocessor.timeout=900 notebooks/*.ipynb > /dev/null
+	@echo "notebooks execute cleanly"
 
 check: lint typecheck test ## Everything CI runs
 

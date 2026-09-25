@@ -6,6 +6,7 @@
 |---|---|
 | [TASK_SPEC.md](TASK_SPEC.md) | **Authoritative** definition of what the system predicts. Read first. |
 | [DATA_CARD.md](DATA_CARD.md) | Data sources, provenance, real vs synthetic, known limitations |
+| [EDA_FINDINGS.md](EDA_FINDINGS.md) | What the data actually shows, including findings that contradict the original plan |
 | [ETHICS.md](ETHICS.md) | Privacy, fairness, governance, and what this system must never be used for |
 
 ## Architecture decision records
@@ -24,7 +25,6 @@ new ADR that supersedes the old one, rather than an edit.
 
 ## Written in later phases
 
-- `EDA_FINDINGS.md` (Phase 3) — including the horizon decision from ADR-0001
 - `MODEL_CARD.md` (Phase 6) — metrics, operating point, limitations
 - `DATABASE.md` (Phase 9) — schema and ER diagram
 - `API.md` (Phase 8) — endpoint reference

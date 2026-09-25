@@ -1,0 +1,12 @@
+feature,auc,abs_auc_lift,mutual_information,coverage
+clicks_7d,0.3637,0.1363,0.00342,1.0
+active_days_30d,0.3674,0.1326,0.00467,1.0
+days_since_last_activity,0.6294,0.1294,0.00402,0.9795
+clicks_14d,0.3717,0.1283,0.00347,1.0
+clicks_30d,0.3795,0.1205,0.00265,1.0
+active_days_total,0.4034,0.0966,0.00246,1.0
+clicks_total,0.4083,0.0917,0.00143,1.0
+clicks_prev_30d,0.4114,0.0886,0.00186,1.0
+max_resources_30d,0.4167,0.0833,0.00317,1.0
+clicks_ratio_30d,0.4588,0.0412,0.00297,1.0
+clicks_delta_30d,0.4746,0.0254,0.00089,1.0
