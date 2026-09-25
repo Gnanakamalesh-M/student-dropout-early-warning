@@ -1,6 +1,7 @@
 # ADR-0001 — Prediction target, time origin, and horizon
 
-- **Status:** Accepted (horizon value provisional — see "Revisit" below)
+- **Status:** Accepted. Horizon **confirmed at H = 30** on 2026-09-25 — see
+  [Horizon decision](#horizon-decision-resolved-2026-09-25).
 - **Date:** 2026-09-25
 - **Supersedes:** none
 
@@ -110,3 +111,41 @@ the choice is not made post-hoc to flatter the metrics:
 
 `H` is a pipeline parameter (`config/features.yaml`), not a constant, so this
 is a config change rather than a rewrite.
+
+## Horizon decision (resolved 2026-09-25)
+
+The rule above was committed in advance specifically so this decision could not
+be made post-hoc to flatter the metrics. Measured on the real OULAD population:
+
+| Checkpoint | Scored rows | Positives | Positive rate |
+|---:|---:|---:|---:|
+| 30 | 27,373 | 1,105 | **4.04%** |
+| 60 | 26,268 | 799 | 3.04% |
+| 90 | 25,469 | 785 | 3.08% |
+| 120 | 24,684 | 722 | 2.92% |
+| 150 | 23,962 | 780 | 3.26% |
+| 180 | 23,182 | 368 | 1.59% |
+| **Total** | **150,938** | **4,559** | **3.02%** |
+
+The day-30 positive rate is **4.04%**, comfortably above the pre-committed
+1.5% threshold. **H = 30 is confirmed** and no horizon change is made.
+
+A second, unanticipated argument reinforces it: because the shortest
+presentation is 234 days and the final checkpoint plus horizon is 210, **H = 30
+loses no rows to censoring at all**. H = 60 censors 1,152 rows at checkpoint
+180, and H = 90 eliminates that checkpoint entirely. The shortest horizon is
+therefore both sufficiently populated and the only one that preserves the full
+checkpoint range.
+
+Consequences now confirmed rather than predicted:
+
+- The per-row positive rate is **3.02%**, roughly a tenth of the raw 31.2%
+  withdrawal rate — the dilution across six 30-day windows predicted in
+  "Consequences" above. PR-AUC as the headline metric is vindicated.
+- Checkpoint 180 has the weakest signal (1.59%). Per-checkpoint reporting will
+  matter.
+- One consequence was *not* anticipated: **5,127 students withdraw at or before
+  the first checkpoint** and are never scored, 3,089 of them before day 0.
+  Pre-course attrition is a genuinely different problem requiring
+  application-time data, and it is now documented as out of scope in
+  `docs/DATA_CARD.md` rather than quietly absorbed.

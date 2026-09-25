@@ -3,10 +3,11 @@
 Provenance and limitations of every dataset in this project. Rationale for the
 strategy: [ADR-0002](adr/0002-dataset-strategy.md).
 
-> **Status: Phase 1.** The figures below are from prior knowledge and are
-> marked *unverified*. Phase 2 verifies every row count, column name, and
-> license term against the live source and replaces this notice. No modelling
-> happens before that verification.
+> **Status: Phase 2.** All OULAD figures below are **verified** against the
+> actual extraction on 2026-09-25 and are asserted by
+> `tests/integration/test_oulad_real_data.py`, so a changed snapshot fails CI
+> rather than shifting downstream numbers silently. The synthetic track
+> (Track B) is not yet built.
 
 ## Provenance labelling
 
@@ -22,44 +23,181 @@ dictionary and are never presented as observed measurements.
 
 ---
 
-## Track A — OULAD (primary, real)
+## Track A — OULAD (primary, real) — VERIFIED
 
 | Field | Value |
 |---|---|
 | Name | Open University Learning Analytics Dataset |
-| License | CC-BY 4.0 *(unverified)* |
-| Students | ~32,593 *(unverified)* |
-| Course presentations | 7, ordered in time (2013B, 2013J, 2014B, 2014J) *(unverified)* |
-| Granularity | Daily VLE clickstream; timestamped assessment submissions |
-| Dropout label | `final_result = "Withdrawn"`, with `date_unregistration` giving the day |
-| Role | **All headline metrics come from this dataset** |
+| Citation | Kuzilek, Hlosta & Zdrahal (2017), *Scientific Data* 4:170171 |
+| License | CC-BY 4.0 |
+| Acquired | 2026-09-25 via the UCI ML Repository mirror (dataset 349) |
+| Archive sha256 | `f2ed1902616c1fe8d2824d872c0b7d2d72be435bf0124d077044fe4be2c6d3e4` |
+| Archive size | 46.7 MB zip |
 
-**Why it was chosen.** It is the only public candidate with real dropout labels
-*and* genuine longitudinal structure. `date_unregistration` gives a timestamped
-event, which is what makes the point-in-time framing in
-[TASK_SPEC.md](TASK_SPEC.md) possible. The time-ordered presentations enable a
-forward-in-time test split.
+### Acquisition note — the canonical link is dead
 
-**What it does not contain.** Semester GPA, backlog counts, subject-wise
-attendance. These are *not* fabricated onto OULAD students — see Track B.
+The Open University's own download
+(`http://schools.stem.open.ac.uk/cdn/files/anonymisedData.zip`, still the
+button target on `research.stem.open.ac.uk/ouanalyse/dataset/`) returned
+**HTTP 404** on 2026-09-25, and the older `analyse.kmi.open.ac.uk` endpoints
+now redirect to a generic marketing page. `scripts/download_data.py` therefore
+tries an ordered mirror list, keeps the OU link first so its recovery is
+detected automatically, and verifies the zip magic bytes — a dead host that
+answers with an HTML error page and HTTP 200 would otherwise be written to disk
+as a corrupt archive.
 
-**Known limitations.**
+### Verified table sizes
 
-- Single institution, UK distance-learning, 2013–2014. Distance learners'
-  engagement patterns differ substantially from on-campus students, so findings
-  do not transfer to a residential Indian university without re-validation.
-- `Withdrawn` is a formal de-registration. Students who stop engaging without
-  de-registering are labelled by their final result, not by disengagement —
-  the label is administrative, not behavioural.
-- Clickstream volume is tens of millions of rows; pre-aggregation to
-  student-week is required (ADR-0002).
-- `imd_band` (area deprivation) and `age_band` are present. These are routed to
-  an isolated table for the fairness audit only and are excluded from the
-  feature matrix — see [ETHICS.md](ETHICS.md).
+| File | Data rows |
+|---|---:|
+| `courses.csv` | 22 |
+| `assessments.csv` | 206 |
+| `vle.csv` | 6,364 |
+| `studentInfo.csv` | 32,593 |
+| `studentRegistration.csv` | 32,593 |
+| `studentAssessment.csv` | 173,912 |
+| `studentVle.csv` | 10,655,280 |
+
+### Structure — correcting a Phase 1 error
+
+Phase 1 documentation described OULAD as having "7 course presentations". That
+was **wrong**. It has:
+
+- **7 modules** (`AAA`–`GGG`), and
+- **4 presentation codes** (`2013B`, `2013J`, `2014B`, `2014J`), where the
+  trailing letter is the start month (B = February, J = October),
+
+giving **22 module-presentations**. The distinction matters because the
+forward-in-time split ([ADR-0003](adr/0003-leakage-controls-and-splitting.md))
+orders on the 4 presentation *codes*, not the 22 module-presentations.
+
+Students per presentation code: 2013B 4,684 · 2013J 8,845 · 2014B 7,804 ·
+2014J 11,260. Presentation lengths range 234–269 days.
+
+### Outcome distribution
+
+| `final_result` | Students | Share |
+|---|---:|---:|
+| Pass | 12,361 | 37.9% |
+| Withdrawn | 10,156 | 31.2% |
+| Fail | 7,052 | 21.6% |
+| Distinction | 3,024 | 9.3% |
+
+Note that the raw 31.2% withdrawal rate is **not** the modelling positive
+rate; see the population report below.
+
+### Data quirks — found by inspection, handled in `loaders.py`
+
+**1. Missing values are the literal string `"?"`, not an empty field.** This is
+the most dangerous quirk in the dataset. Read without `na_values=["?"]`,
+`date_unregistration` parses as `object`, every null check reports "not null"
+for all 32,593 rows, and label construction produces a completely wrong but
+entirely plausible-looking dataset. Asserted by an integration test.
+
+**2. `imd_band` has an inconsistent category.** `"10-20"` lacks the percent
+sign that the other nine bands carry, making a ten-band variable appear to have
+eleven categories. Normalised on load.
+
+**3. Course-day columns are frequently negative, and some exceed the
+presentation length.** Measured ranges:
+
+| Column | Min | Max |
+|---|---:|---:|
+| `date_registration` | -322 | 167 |
+| `date_unregistration` | -365 | 444 |
+| `date_submitted` | -11 | 608 |
+| `assessments.date` | 12 | 261 |
+| `studentVle.date` | -25 | 269 |
+
+Registration precedes day 0 normally; de-registration and assessment
+submission are sometimes recorded administratively long after a course ends. No
+code may assume course days are non-negative or bounded by presentation length.
+
+**4. Two label-source disagreements between `final_result` and
+`date_unregistration`:**
+
+- **93 students** are `Withdrawn` with **no** de-registration day. Their event
+  time is unknown, so they cannot be labelled either way — calling them
+  negative asserts they stayed, calling them positive invents a date. They are
+  **excluded and counted**.
+- **9 students** have a de-registration day but `final_result = "Fail"`. The
+  dated event is treated as **authoritative** over the administrative summary,
+  which is also the only choice consistent with using the event time to define
+  the label everywhere else.
+
+**5. `id_student` is reused across modules.** A student can appear in several
+module-presentations, so the key is (module, presentation, student). This is
+also why grouped cross-validation must group on `id_student`.
+
+### Engagement coverage after aggregation
+
+The clickstream is pre-aggregated to student-day granularity with DuckDB
+(out of core, ~3 seconds), which resolves the scale risk flagged in ADR-0002:
+
+| | Before | After |
+|---|---:|---:|
+| Rows | 10,655,280 | 1,808,119 |
+| Size | 453.8 MB CSV | 4.5 MB Parquet |
+
+- Students with any VLE activity: **26,074** of 32,593. **6,519 students have
+  no clickstream at all** — a real "never engaged" population, and a
+  substantial one worth reporting rather than imputing away.
+- Course-day range: -25 to 269 · 107,752 rows before day 0 · 39,605,099 total
+  clicks.
+
+### Modelling population (verified)
+
+Constructed per [docs/TASK_SPEC.md](TASK_SPEC.md); regenerate with
+`python scripts/build_dataset.py`. Full output: `reports/population_report.md`.
+
+- Source student-presentation rows: **32,593**
+- Excluded, withdrawn with no event time: **93**
+- Withdrew at or before the first checkpoint, never scored: **5,127**
+
+| Checkpoint | Scored rows | Positives | Positive rate |
+|---:|---:|---:|---:|
+| 30 | 27,373 | 1,105 | 4.04% |
+| 60 | 26,268 | 799 | 3.04% |
+| 90 | 25,469 | 785 | 3.08% |
+| 120 | 24,684 | 722 | 2.92% |
+| 150 | 23,962 | 780 | 3.26% |
+| 180 | 23,182 | 368 | 1.59% |
+| **Total** | **150,938** | **4,559** | **3.02%** |
+
+**Censoring: zero rows lost.** The shortest presentation is 234 days and the
+last checkpoint plus horizon is 210, so every label window is fully observed at
+H=30. This is a concrete advantage of H=30 over H=60 or H=90, both of which do
+lose rows.
+
+### Scope limitation worth stating plainly
+
+**3,089 of the 10,063 recorded withdrawals (31%) occur at or before day 0**, and
+5,127 occur at or before day 30. These students are out of scope by
+construction: there is no in-course behaviour to observe, so no
+engagement-based model could ever flag them. The system addresses withdrawal
+*during* a course, not pre-course attrition — a materially different problem
+that would need application-time rather than behavioural data.
+
+### Other known limitations
+
+- Single institution, UK distance learning, 2013–2014. Distance learners'
+  engagement patterns differ substantially from on-campus students; findings do
+  not transfer to a residential university without re-validation.
+- The label is formal de-registration, an administrative act. Students who stop
+  engaging without de-registering are not labelled positive, and that
+  under-counting is unlikely to be random across groups.
+- OULAD contains no GPA, backlog count, or subject-wise attendance. These are
+  **not** fabricated onto real students — see Track B.
+- `imd_band` (area deprivation), `age_band`, `gender`, `region`, and
+  `disability` are present. They are routed to an isolated table read only by
+  the offline fairness audit and are excluded from the feature matrix
+  ([ETHICS.md](ETHICS.md)).
 
 ---
 
 ## Track B — synthetic longitudinal cohort
+
+**Status: not yet built** (remaining Phase 2 work).
 
 | Field | Value |
 |---|---|
@@ -67,7 +205,7 @@ attendance. These are *not* fabricated onto OULAD students — see Track B.
 | Status | **Synthetic. Not real students.** |
 | Role | Exercises the GPA / backlog / attendance features and UI that OULAD lacks |
 
-**Generating process.** Published DAG:
+Planned generating process (published DAG):
 
 ```
 latent engagement propensity ──┬──> attendance ──┬──> assessment marks ──> backlogs ──┐
@@ -78,7 +216,7 @@ latent engagement propensity ──┬──> attendance ──┬──> assess
 
 Seeded; configurable noise, missingness, and dropout base rate.
 
-**The circularity caveat — read this before quoting any synthetic metric.**
+**The circularity caveat — read before quoting any synthetic metric.**
 
 > Metrics computed on synthetic data measure pipeline correctness, not
 > real-world predictive performance. They must not be read as evidence that the
@@ -97,23 +235,9 @@ in the model card, never merged.
 | Field | Value |
 |---|---|
 | Name | Predict Students' Dropout and Academic Success (Realinho et al., Polytechnic Institute of Portalegre) |
-| Rows / features | ~4,424 / 36 *(unverified)* |
 | Structure | Cross-sectional — one row per student, **no time axis** |
 | Role | `notebooks/07_uci_static_benchmark.ipynb` only |
 
 Not part of the pipeline, API, or reported results. It cannot support the
 longitudinal framing, and because it shares no feature space with OULAD it
 cannot support a transfer or generalisation claim. None will be made.
-
----
-
-## Excluded populations (counted, not hidden)
-
-Phase 2 reports counts for each:
-
-- Students with no engagement or assessment record at a checkpoint
-  (never-engaged registrants) — a real operational population, but a
-  degenerate modelling case that would dominate early checkpoints.
-- Rows dropped because the label horizon extends past available observation
-  (administrative censoring).
-- Rows at or after a student's withdrawal.
