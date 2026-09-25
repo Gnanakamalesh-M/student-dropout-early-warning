@@ -1,0 +1,19 @@
+# Normalize line endings in the repository to LF. Without this, files authored
+# on Windows land in git with CRLF and `ruff format --check` disagrees between a
+# local run and Linux CI.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.parquet binary
+*.joblib binary
+*.pkl binary
+
+# Notebook diffs are noise in review; outputs are stripped by pre-commit.
+*.ipynb -diff
