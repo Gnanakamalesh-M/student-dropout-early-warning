@@ -7,6 +7,7 @@
 | [TASK_SPEC.md](TASK_SPEC.md) | **Authoritative** definition of what the system predicts. Read first. |
 | [DATA_CARD.md](DATA_CARD.md) | Data sources, provenance, real vs synthetic, known limitations |
 | [EDA_FINDINGS.md](EDA_FINDINGS.md) | What the data actually shows, including findings that contradict the original plan |
+| [FEATURE_DICTIONARY.md](FEATURE_DICTIONARY.md) | Every feature, and the ablation study that decided the allowlist |
 | [ETHICS.md](ETHICS.md) | Privacy, fairness, governance, and what this system must never be used for |
 
 ## Architecture decision records

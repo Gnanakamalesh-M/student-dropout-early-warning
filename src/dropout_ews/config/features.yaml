@@ -1,15 +1,15 @@
-# Prediction-task parameters. Authoritative definitions: docs/TASK_SPEC.md
-#
-# These are config, not constants, because ADR-0001 commits us to re-evaluating
-# the horizon against the observed positive rate during EDA (Phase 3).
+# Prediction-task parameters and the feature allowlist.
+# Authoritative task definition: docs/TASK_SPEC.md
+# Feature rationale and the evidence behind this allowlist:
+#   docs/FEATURE_DICTIONARY.md
 
 task:
   # Course-relative days at which students are scored.
   checkpoints: [30, 60, 90, 120, 150, 180]
 
-  # Prediction horizon in days. Provisional: ADR-0001 sets the rule for
-  # revisiting this in Phase 3 (keep 30 if day-30 positive rate >= 1.5%,
-  # otherwise report 30 and 60 with 60 as primary).
+  # Prediction horizon in days. CONFIRMED at 30 on 2026-09-25 against the rule
+  # pre-committed in ADR-0001: the day-30 positive rate is 4.04%, above the
+  # 1.5% threshold. H=30 also loses no rows to censoring, unlike H=60 or H=90.
   horizon_days: 30
 
   # Rows whose label window extends past available observation are dropped,
@@ -22,12 +22,12 @@ task:
 
 evaluation:
   # Headline metric. ROC-AUC is reported but is optimistic under this degree
-  # of imbalance.
+  # of imbalance (3.02% positive).
   primary_metric: average_precision
 
   # The operating point is selected to hit this positive-class recall on the
-  # validation presentation. Precision and absolute alert volume at this point
-  # are reported alongside; see docs/TASK_SPEC.md.
+  # validation presentation. Precision and absolute alert volume at that point
+  # are reported alongside.
   target_recall: 0.80
 
   # Metrics are always broken out per checkpoint as well as in aggregate.
@@ -36,17 +36,126 @@ evaluation:
   bootstrap_iterations: 1000
   random_seed: 42
 
-# Feature allowlist. The feature matrix is built from this list, never by
-# dropping columns from a wide frame: a denylist fails silently when a new
-# outcome-adjacent column appears upstream, an allowlist fails loudly.
-# Populated in Phase 4; the groups below are the planned design.
+# ---------------------------------------------------------------------------
+# Feature allowlist
+# ---------------------------------------------------------------------------
+# The feature matrix is built from this list, never by dropping columns from a
+# wide frame: a denylist fails silently when a new outcome-adjacent column
+# appears upstream, whereas an allowlist fails loudly.
+#
+# Group membership here reflects a Phase 4 ablation study on the TRAINING split
+# only (4-fold grouped CV, RandomForest, PR-AUC). Removing each group from the
+# full 39-feature model cost:
+#
+#   static       +0.0078   MATTERS
+#   assessment   +0.0065   MATTERS
+#   relative     +0.0056   MATTERS
+#   trend (all)  +0.0020   within the +/-0.0048 fold noise
+#   volatility   +0.0002   nothing
+#
+# Two consequences, both against the original project plan:
+#
+#   * `clicks_slope_4w`, `declining_weeks_streak` and `clicks_weekly_std` are
+#     EXCLUDED. They showed the weakest univariate lift (0.020, 0.026, 0.082)
+#     and their removal is free: the 36-feature set below scores 0.0968 against
+#     0.0972 for all 39, a difference well inside fold noise.
+#   * The trend group is retained only in its strongest, baseline-relative and
+#     ratio forms, and is documented as contributing little. The plan called
+#     longitudinal trends "the part that carries the project"; the evidence
+#     says assessment behaviour, cohort-relative normalisation and enrolment
+#     context carry it instead.
+
 features:
-  level: []        # current attendance, GPA, backlogs, recent click counts
-  trend: []        # OLS slopes, deltas vs previous window and vs own baseline
-  volatility: []   # rolling std of marks and weekly engagement
-  recency: []      # consecutive absences, days since last login/submission
-  relative: []     # z-scores vs training-period cohort statistics
-  composite: []    # documented heuristic indices (not learned)
+  # Current engagement volume and breadth. Stable across every checkpoint.
+  level:
+    - clicks_7d
+    - clicks_14d
+    - clicks_28d
+    - clicks_56d
+    - clicks_all_time
+    - active_days_7d
+    - active_days_14d
+    - active_days_28d
+    - active_days_56d
+    - active_days_all_time
+    - clicks_per_active_day_28d
+
+  # How long since the student was last seen. `days_since_last_activity` is NaN
+  # for the never-active population, paired with the `ever_active` indicator
+  # rather than imputed with a sentinel.
+  recency:
+    - days_since_last_activity
+    - ever_active
+    - inactive_weeks_streak
+
+  # Direction of change. Retained in ratio and baseline-relative form only;
+  # see the note above. `clicks_vs_baseline_ratio` is the strongest of these
+  # (univariate lift 0.102) and is the form Phase 3 predicted would work,
+  # because it separates a genuine faller from a consistently low performer.
+  trend:
+    - clicks_vs_baseline_ratio
+    - clicks_ratio_4w
+    - clicks_delta_4w
+
+  # Assessment submission behaviour and marks. New in Phase 4 and never
+  # screened before; the second most valuable group, which vindicates the
+  # Phase 3 note that the 173,912 submission rows were unexploited.
+  assessment:
+    - assessments_due
+    - assessments_submitted
+    - assessments_failed
+    - assessments_late
+    - assessments_missed
+    - submission_rate
+    - mean_score
+    - min_score
+    - mean_submission_lag
+    - days_since_last_submission
+    - has_submitted
+
+  # Cohort-relative z-scores, added by preprocessing.cohort.CohortZScorer
+  # rather than by FeatureBuilder, because they are fitted state and must use
+  # training-period statistics only (ADR-0003 control #4).
+  # `submission_rate_cohort_z` is the strongest single feature in the whole set
+  # (univariate lift 0.193).
+  relative:
+    - clicks_7d_cohort_z
+    - clicks_28d_cohort_z
+    - active_days_28d_cohort_z
+    - mean_score_cohort_z
+    - submission_rate_cohort_z
+
+  # Enrolment context known at registration. Not protected attributes: prior
+  # attempts, credit load and how early the student registered. The most
+  # valuable group by ablation, which was not anticipated.
+  static:
+    - checkpoint_day
+    - num_of_prev_attempts
+    - studied_credits
+    - date_registration
+
+  # Deliberately empty. `clicks_weekly_std` was the only candidate and its
+  # removal cost +0.0002 PR-AUC, i.e. nothing. Kept as a group so the
+  # exclusion is visible rather than silently forgotten.
+  volatility: []
+
+# Features the builder computes but the model deliberately does not use. Listed
+# so every builder output is accounted for: an unlisted omission is an accident,
+# and `assessments_banked` below started life as exactly that before being
+# tested properly.
+#
+#   clicks_slope_4w         univariate lift 0.020; weakest trend form
+#   declining_weeks_streak  lift 0.026; redundant with the ratio features
+#   clicks_weekly_std       removal cost +0.0002 PR-AUC
+#   assessments_banked      non-zero in only 1.49% of rows, univariate AUC
+#                           0.5027 (no signal), and already proxied by
+#                           num_of_prev_attempts (r = 0.233). Adding it gives
+#                           +0.0012 against +/-0.0044 fold noise.
+excluded_by_ablation:
+  - clicks_slope_4w
+  - declining_weeks_streak
+  - clicks_weekly_std
+  - assessments_banked
 
 # Columns that must never reach the model. Asserted by
 # tests/ml/test_no_forbidden_features.py against the trained model's feature
@@ -56,6 +165,13 @@ forbidden:
     - date_unregistration
     - withdrawal_day
     - final_result
+    # Protected attributes. Present in the raw data, routed to an isolated
+    # table for the fairness audit only. See docs/ETHICS.md.
+    - gender
+    - age_band
+    - imd_band
+    - disability
+    - region
   patterns:
     - "*_final"
     - "*_outcome"

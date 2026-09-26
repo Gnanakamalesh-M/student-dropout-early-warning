@@ -51,9 +51,25 @@ jobs:
           name: coverage
           path: coverage.xml
 
-  # Phase 2+ will add:
-  #   - a `leakage` job running the as-of property test in isolation, so a
-  #     leakage regression is unmissable in the checks list rather than buried
-  #     in the general test output (ADR-0003)
+  leakage:
+    # A dedicated job so a leakage regression shows as its own failed check
+    # rather than being buried in the general test output (ADR-0003). This is
+    # the guarantee the whole project rests on, so it gets top billing.
+    name: Leakage guarantees
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - name: As-of property test and feature allowlist
+        env:
+          ENVIRONMENT: ci
+        run: pytest tests/ml -m ml -q
+
+  # Later phases will add:
   #   - an `integration` job with a postgres service container
   #   - a `frontend` job (vitest)

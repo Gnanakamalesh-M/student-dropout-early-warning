@@ -54,6 +54,12 @@ data: ## Download OULAD, build the population, generate the synthetic cohort
 eda: ## Regenerate every EDA table and figure in reports/
 	$(PYTHON) scripts/run_eda.py
 
+features: ## Build the feature matrix and the train/validation/test split
+	$(PYTHON) scripts/build_features.py
+
+leakage: ## Run the as-of property test and allowlist guards on their own
+	$(PYTHON) -m pytest tests/ml -m ml -q
+
 notebooks: ## Execute the EDA notebooks to check they still run
 	# Not part of CI: these need data/raw/oulad/, which is not committed.
 	# Run after `make data`.

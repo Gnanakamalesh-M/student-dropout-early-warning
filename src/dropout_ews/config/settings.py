@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Repository root, resolved from this file's location:
@@ -64,29 +64,43 @@ class EvaluationConfig(BaseModel):
 
 
 class FeatureGroups(BaseModel):
-    """The feature allowlist, grouped by kind. See ADR-0003 control #2."""
+    """The feature allowlist, grouped by kind. See ADR-0003 control #2.
+
+    ``extra="forbid"`` is essential rather than stylistic. With Pydantic
+    defaults, a group present in ``features.yaml`` but absent here is silently
+    discarded, so the allowlist would quietly shrink and the model would train
+    on fewer features than the config appears to declare. That happened during
+    Phase 4 with the ``assessment`` and ``static`` groups: 15 features vanished
+    without any error, and only a test pinning the expected count caught it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     level: list[str] = []
+    recency: list[str] = []
     trend: list[str] = []
     volatility: list[str] = []
-    recency: list[str] = []
+    assessment: list[str] = []
     relative: list[str] = []
+    static: list[str] = []
     composite: list[str] = []
+
+    # Flattening order. Declared explicitly so the feature-matrix column order
+    # is stable and reproducible across runs.
+    _GROUP_ORDER = (
+        "level",
+        "recency",
+        "trend",
+        "volatility",
+        "assessment",
+        "relative",
+        "static",
+        "composite",
+    )
 
     def all_features(self) -> list[str]:
         """Flatten the allowlist, preserving group order."""
-        return [
-            name
-            for group in (
-                self.level,
-                self.trend,
-                self.volatility,
-                self.recency,
-                self.relative,
-                self.composite,
-            )
-            for name in group
-        ]
+        return [name for group in self._GROUP_ORDER for name in getattr(self, group)]
 
 
 class ForbiddenColumns(BaseModel):
@@ -99,6 +113,14 @@ class FeatureConfig(BaseModel):
     evaluation: EvaluationConfig
     features: FeatureGroups
     forbidden: ForbiddenColumns
+    excluded_by_ablation: list[str] = []
+    """Builder outputs the model deliberately does not use.
+
+    Distinct from ``forbidden``: these are safe to compute and would not leak,
+    they simply failed to earn their place. Recorded so that every builder
+    output is accounted for as either allowlisted, forbidden, or explicitly
+    excluded — an unlisted omission is an accident rather than a decision.
+    """
 
     @model_validator(mode="after")
     def _allowlist_and_forbidden_are_disjoint(self) -> FeatureConfig:
