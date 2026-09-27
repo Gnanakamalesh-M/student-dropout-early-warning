@@ -132,3 +132,46 @@ def configure_logging(level: str = "INFO") -> None:
         ),
         cache_logger_on_first_use=True,
     )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Response headers that limit what a browser will do with our responses.
+
+    This API returns individual students' risk figures, so the headers worth
+    setting are the ones that stop those responses being reinterpreted or
+    embedded somewhere they were not intended:
+
+    - ``X-Content-Type-Options: nosniff`` stops a browser guessing that a JSON
+      body is HTML and executing it.
+    - ``X-Frame-Options: DENY`` stops the dashboard being framed by another site,
+      which is the setup for clickjacking a counsellor into assigning an
+      intervention.
+    - ``Referrer-Policy: no-referrer`` matters more than usual here because
+      student codes appear in URLs; the default policy would leak them to any
+      third-party resource the page loads.
+    - ``Cache-Control: no-store`` on API responses, because a per-student risk
+      figure cached by a shared-machine browser is exactly the disclosure this
+      project's data-minimisation section is about.
+
+    HSTS is opt-in via ``force_https``. Sending it over plain HTTP is wrong, and
+    on a developer machine it pins localhost to HTTPS in the browser for the
+    max-age — a persistent, confusing, self-inflicted outage.
+    """
+
+    def __init__(self, app: object, force_https: bool = False) -> None:
+        super().__init__(app)  # type: ignore[arg-type]
+        self.force_https = force_https
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Cache-Control", "no-store")
+        if self.force_https:
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return response

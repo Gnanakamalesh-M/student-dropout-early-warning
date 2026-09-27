@@ -1,6 +1,11 @@
 # Developer entrypoints. Windows users: run these under Git Bash, or invoke the
 # underlying commands directly (see README).
 #
+# `make` itself is not installed on the machine this was developed on, so these
+# targets are thin wrappers that have not been executed as targets. Every command
+# they wrap has been run directly, and CI invokes the commands rather than the
+# Makefile, so nothing depends on this file being correct.
+#
 # Python 3.10 is pinned deliberately — SHAP/XGBoost wheels on 3.13+ are
 # unreliable. See ADR-0004.
 
@@ -11,7 +16,8 @@ PYTHON := $(BIN)/python
 
 .DEFAULT_GOAL := help
 .PHONY: help setup install lint format typecheck test test-fast test-ml test-integration \
-        check clean data eda notebooks fairness drift
+        check clean data eda notebooks fairness drift format-check \
+        compose-up compose-down migrate-roundtrip
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -112,7 +118,21 @@ notebooks: ## Execute the EDA notebooks to check they still run
 		--ExecutePreprocessor.timeout=900 notebooks/*.ipynb > /dev/null
 	@echo "notebooks execute cleanly"
 
-check: lint typecheck test ## Everything CI runs
+compose-up: ## Build and run the full stack (needs Docker; never run by the author)
+	docker compose up --build
+
+compose-down: ## Stop the stack and remove volumes
+	docker compose down -v
+
+migrate-roundtrip: ## Prove migrations reverse: upgrade -> downgrade -> upgrade
+	$(BIN)/alembic -c backend/alembic.ini upgrade head
+	$(BIN)/alembic -c backend/alembic.ini downgrade base
+	$(BIN)/alembic -c backend/alembic.ini upgrade head
+
+check: lint format-check typecheck test ## Everything CI runs
+
+format-check: ## Fail if formatting is off (CI runs this; `make format` fixes it)
+	$(BIN)/ruff format --check .
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage coverage.xml

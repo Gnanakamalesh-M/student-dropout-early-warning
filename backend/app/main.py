@@ -20,7 +20,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 
 from backend.app import schemas, services
-from backend.app.middleware import RequestContextMiddleware, audit_log, configure_logging
+from backend.app.middleware import (
+    RequestContextMiddleware,
+    SecurityHeadersMiddleware,
+    audit_log,
+    configure_logging,
+)
 from backend.app.repository import ParquetRepository, RepositoryState
 from backend.app.security import (
     Role,
@@ -547,10 +552,14 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware, force_https=settings.force_https)
     app.add_middleware(
         CORSMiddleware,
         # An allowlist rather than "*": credentials are sent on these requests.
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        # Read from settings -- this was hardcoded to the Vite dev server, which
+        # breaks any real deployment in a way that leaves no trace in the API log,
+        # because the browser blocks the response after the request succeeded.
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["*"],

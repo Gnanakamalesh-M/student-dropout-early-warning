@@ -1,0 +1,71 @@
+# Local full-stack run: PostgreSQL, the API, the dashboard.
+#
+# NOT RUN BY ITS AUTHOR. Docker is unavailable on the development machine, so
+# this file is exercised only by the `containers` job in .github/workflows/ci.yml,
+# which builds both images, boots this stack, applies migrations and checks that
+# /health reports ready. Until that job has passed, treat this as reviewed code
+# that has never executed.
+#
+#   cp .env.example .env     # then set SECRET_KEY
+#   docker compose up --build
+#   docker compose exec api alembic -c backend/alembic.ini upgrade head
+#   docker compose exec api python scripts/seed_db.py
+#
+# Dashboard on :8080, API on :8000, both on the host.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ews
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ews}
+      POSTGRES_DB: ews
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Not published to the host by default. Nothing outside this network needs
+    # Postgres, and an exposed database with a default password is how a demo
+    # deployment becomes an incident.
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ews -d ews"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      # +asyncpg is rewritten to +psycopg by sync_database_url(); the URL is
+      # written this way for forward compatibility, see backend/app/db/session.py.
+      DATABASE_URL: postgresql+asyncpg://ews:${POSTGRES_PASSWORD:-ews}@db:5432/ews
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set; see .env.example}
+      REPOSITORY_BACKEND: ${REPOSITORY_BACKEND:-database}
+      CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:8080"]}'
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    # Read-only mounts rather than image layers. A model baked into an image
+    # cannot be rotated without a rebuild, and data/raw holds the OULAD extract,
+    # whose redistribution terms are the dataset's and not ours to assume.
+    volumes:
+      - ./models:/app/models:ro
+      - ./data/processed:/app/data/processed:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

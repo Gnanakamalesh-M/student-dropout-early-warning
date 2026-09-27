@@ -266,6 +266,21 @@ class Settings(BaseSettings):
     secret_key: str = "dev-only-insecure-change-me"
     access_token_expire_minutes: int = 30
 
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    """Browser origins allowed to call the API with credentials.
+
+    Was hardcoded to the Vite dev server, which silently breaks any real
+    deployment: the browser blocks the response and the dashboard shows a network
+    error with nothing in the API log, because the request never reached a route.
+    A validator below refuses a wildcard and refuses to leave localhost in place
+    outside development.
+    """
+
+    force_https: bool = False
+    """Send HSTS. Off by default because sending it over plain HTTP is wrong, and
+    on a developer machine it would pin localhost to HTTPS in the browser for the
+    duration of the max-age -- a confusing, persistent, self-inflicted outage."""
+
     repository_backend: Literal["parquet", "database"] = "parquet"
     """Which storage the API reads from.
 
@@ -290,6 +305,31 @@ class Settings(BaseSettings):
                 raise ValueError("secret_key must be set outside local development")
             if len(self.secret_key) < 32:
                 raise ValueError("secret_key must be at least 32 characters")
+        return self
+
+    @model_validator(mode="after")
+    def _production_cors_must_be_explicit(self) -> Settings:
+        """A wildcard origin with credentials is not a policy, it is the absence
+        of one -- and browsers reject the combination anyway, so it would fail at
+        runtime rather than at startup. Failing at startup is better.
+        """
+        if "*" in self.cors_origins:
+            raise ValueError(
+                "cors_origins must not contain '*': credentials are sent on these "
+                "requests, and browsers reject wildcard-with-credentials"
+            )
+        if self.environment in {"staging", "production"}:
+            if not self.cors_origins:
+                raise ValueError("cors_origins must be set outside local development")
+            local = [o for o in self.cors_origins if "localhost" in o or "127.0.0.1" in o]
+            if local:
+                raise ValueError(
+                    f"cors_origins still contains development origins {local}; set the "
+                    "deployed dashboard origin instead"
+                )
+            insecure = [o for o in self.cors_origins if o.startswith("http://")]
+            if insecure:
+                raise ValueError(f"cors_origins must use https outside development: {insecure}")
         return self
 
     @model_validator(mode="after")
