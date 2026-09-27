@@ -140,7 +140,8 @@ Python **3.10** is required (ADR-0004: SHAP/XGBoost wheels on 3.13+ are
 unreliable).
 
 ```bash
-git clone <repo> && cd <repo>
+git clone https://github.com/Kamalesh972/student-dropout-early-warning.git
+cd student-dropout-early-warning
 py -3.10 -m venv .venv && .venv/Scripts/activate    # Windows
 # python3.10 -m venv .venv && source .venv/bin/activate   # macOS/Linux
 pip install -e ".[dev,viz,api]"
