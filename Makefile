@@ -66,6 +66,9 @@ baselines: ## Train the Phase 5 baselines and write reports/baseline_comparison.
 model: ## Tune, calibrate and register the primary XGBoost model
 	$(PYTHON) scripts/train_model.py
 
+explain: ## Global importance, attribution stability, and worked examples
+	$(PYTHON) scripts/run_explainability.py
+
 notebooks: ## Execute the EDA notebooks to check they still run
 	# Not part of CI: these need data/raw/oulad/, which is not committed.
 	# Run after `make data`.

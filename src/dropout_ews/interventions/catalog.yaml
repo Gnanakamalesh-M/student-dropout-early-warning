@@ -1,0 +1,168 @@
+# Intervention catalog.
+#
+# EVERY ENTRY MUST BE AN OFFER OF SUPPORT.
+#
+# Nothing punitive, nothing that increases surveillance of a student, and nothing
+# that could stigmatise. This is enforced, not merely intended:
+# tests/unit/test_intervention_catalog.py checks every entry against a
+# punitive-keyword denylist and asserts that each risk factor maps to at least
+# one supportive action. See docs/ETHICS.md and ADR-0005.
+#
+# Rules are hand-written and reviewed rather than learned. A learned recommender
+# would need intervention-outcome data this project does not have, and would be
+# far harder to defend to the staff and students it affects.
+#
+# Every intervention is created with status `recommended` and requires a human to
+# assign it. The config validator rejects any attempt to disable that.
+
+interventions:
+  # --- engagement ---
+  - key: advisor_check_in
+    title: Advisor check-in
+    factors: [low_engagement, disengaged]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      A short, friendly message from the student's advisor asking how the module
+      is going and whether anything is getting in the way. Opens a conversation
+      rather than requesting an explanation.
+    typical_effort_minutes: 15
+
+  - key: study_skills_resources
+    title: Study-skills resources
+    factors: [low_engagement, time_management]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      Share the institution's planning and study-technique resources, framed as
+      generally useful rather than as a response to a problem.
+    typical_effort_minutes: 10
+
+  - key: reengagement_conversation
+    title: Re-engagement conversation
+    factors: [disengaged, never_engaged]
+    intensity: moderate
+    owner_role: counsellor
+    description: >-
+      A scheduled call to check the student still intends to continue, that they
+      can access the materials, and that they know what support exists. Access
+      and circumstance problems are common and easily fixed once known.
+    typical_effort_minutes: 30
+
+  - key: technical_access_check
+    title: Technical access check
+    factors: [never_engaged, disengaged]
+    intensity: light
+    owner_role: admin
+    description: >-
+      Confirm the student can actually reach the learning environment. Some
+      apparent disengagement is a login, device or connectivity problem.
+    typical_effort_minutes: 10
+
+  # --- academic ---
+  - key: subject_tutoring
+    title: Subject tutoring
+    factors: [academic_difficulty]
+    intensity: moderate
+    owner_role: counsellor
+    description: >-
+      Offer tutoring in the specific topics where assessment scores are lowest.
+    typical_effort_minutes: 60
+
+  - key: academic_mentoring
+    title: Academic mentoring
+    factors: [academic_difficulty, declining_engagement]
+    intensity: moderate
+    owner_role: counsellor
+    description: >-
+      Pair the student with a mentor for regular short sessions on approach and
+      workload rather than on content alone.
+    typical_effort_minutes: 45
+
+  - key: assessment_planning_support
+    title: Assessment planning support
+    factors: [missed_assessments, time_management]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      Help the student map out upcoming deadlines and agree a realistic plan for
+      catching up on anything outstanding.
+    typical_effort_minutes: 30
+
+  - key: extension_or_deferral_options
+    title: Explain extension and deferral options
+    factors: [missed_assessments, workload]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      Make sure the student knows what extensions, deferrals and mitigating
+      circumstances processes exist. Many students do not ask because they do not
+      know these are available.
+    typical_effort_minutes: 15
+
+  # --- workload and circumstances ---
+  - key: workload_review
+    title: Workload review
+    factors: [workload, time_management]
+    intensity: moderate
+    owner_role: counsellor
+    description: >-
+      Review the student's credit load alongside their other commitments and
+      discuss options, including reducing load without penalty where the
+      institution allows it.
+    typical_effort_minutes: 45
+
+  - key: wellbeing_signposting
+    title: Wellbeing signposting
+    factors: [declining_engagement, disengaged]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      Share what wellbeing and counselling support is available, with no
+      requirement to explain why. Offered to anyone, not only to flagged
+      students.
+    typical_effort_minutes: 10
+
+  - key: financial_support_signposting
+    title: Financial support signposting
+    factors: [workload, disengaged]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      Point the student toward hardship funds, bursaries and financial advice.
+      Financial pressure is a common driver of reduced study time and is rarely
+      volunteered.
+    typical_effort_minutes: 10
+
+  # --- fallback, so no flagged student is left with an empty list ---
+  - key: general_support_offer
+    title: General support offer
+    factors: [unspecified]
+    intensity: light
+    owner_role: counsellor
+    description: >-
+      A general message offering a conversation and listing available support,
+      used when no specific factor stands out.
+    typical_effort_minutes: 10
+
+# Escalation guidance by risk band. Deliberately conservative at the top end:
+# a CRITICAL band is a prompt for a human to look, never an instruction to act.
+band_guidance:
+  low:
+    max_interventions: 0
+    note: No outreach. Included in routine cohort monitoring only.
+  medium:
+    max_interventions: 1
+    note: >-
+      Passive monitoring. A single light-touch action at most, and only if a
+      specific factor stands out.
+  high:
+    max_interventions: 2
+    note: >-
+      Human review first. If the reviewer agrees, offer up to two supportive
+      actions.
+  critical:
+    max_interventions: 3
+    note: >-
+      Priority human review. A coordinated offer of support, with a named owner.
+      The band is a prompt to look, not a decision that has been made.

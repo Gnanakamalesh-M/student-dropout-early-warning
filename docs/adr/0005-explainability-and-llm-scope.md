@@ -1,6 +1,7 @@
 # ADR-0005 — Explainability language and the scope of LLM use
 
-- **Status:** Accepted
+- **Status:** Accepted, **implemented 2026-09-27** — see
+  [Implementation notes](#implementation-notes-2026-09-27).
 - **Date:** 2026-09-25
 
 ## Context
@@ -98,3 +99,58 @@ wrapper?", the answer is demonstrably no.
   property for an optional enhancement.
 - Slight verbosity in the UI from mandatory disclaimers. Accepted: this is an
   educational risk system and the disclaimer is load-bearing, not decorative.
+
+## Implementation notes (2026-09-27)
+
+Everything in this ADR is implemented and enforced by tests. Three things turned
+out differently from the plan, and one assumption needed checking before it was
+safe to build on.
+
+**The `shap` package could not be used to compute the values.** `shap` 0.49
+parses XGBoost's `base_score` as a float, and XGBoost 3.x serialises it as an
+array string (`'[2.7229803E-2]'`), so `TreeExplainer` raises on construction.
+Rather than pin XGBoost back and retrain, values come from XGBoost's own
+`pred_contribs=True` — the same exact TreeSHAP algorithm, implemented inside
+XGBoost. Additivity against the model margin is asserted in CI to 1e-4.
+
+**Attributions explain the pre-calibration score, not the displayed
+probability.** The artifact is a calibrated wrapper, and TreeSHAP cannot see
+through it. This is sound because isotonic calibration is monotone: a feature
+pushing the raw score up also pushes the calibrated probability up, so the
+ranking the explanation describes is the ranking the displayed figure reflects.
+What is lost is any numeric percentage-point attribution, so the templates never
+make one and a test asserts no rendered sentence contains a percentage.
+
+**Attribution stability was measured before any of this was wired to a UI.** The
+risk was specific: at a 2.7% positive rate with 37 correlated features,
+per-student attributions could have been small and unstable, and two
+near-identical students receiving different "main reasons" would mislead staff
+even with a well-calibrated probability. Measured by top-3 factor overlap against
+nearest neighbours in the model's own feature space:
+
+| Population | Mean overlap | Median | 10th pct |
+|---|---:|---:|---:|
+| All test rows | 0.761 | 0.733 | 0.600 |
+| Top 5% by risk | **0.902** | **1.000** | 0.667 |
+
+Attributions are *more* stable for high-risk students, which is the right
+direction since those are the ones staff see. They are not perfectly stable,
+which is exactly why the mandated wording is "factors the model weighted most
+heavily" rather than "the reasons".
+
+**A design change the data forced.** The single largest global contributor is
+`checkpoint_day` — how far through the course a student is. That is real signal,
+but "this student is at risk because it is day 30" is not something anyone can
+act on. Features are therefore tagged actionable or contextual and rendered in
+separate lists, so context does not crowd out factors staff can respond to. A
+test asserts `checkpoint_day`, `num_of_prev_attempts` and `date_registration` stay
+marked non-actionable.
+
+**Both keyword guards needed negative-context handling.** The punitive denylist
+initially blocked the most supportive line in the catalog — "reducing load
+without penalty" — because it substring-matched `penal`. The language lint
+similarly flagged the disclaimer's own phrase "not the causes of withdrawal".
+Both now strip an explicit allowlist of permitted phrases and match on word
+boundaries, and each has a test asserting the allowance did not make the guard
+permissive. A keyword check with no negative-context handling is either too loose
+to be useful or too tight to permit correct wording.

@@ -1,0 +1,3 @@
+population,rows,mean_top3_overlap,median_top3_overlap,p10_top3_overlap,share_below_one_third
+all test rows,600,0.7609,0.7333,0.6,0.0133
+top 5% by risk,600,0.9016,1.0,0.6667,0.005

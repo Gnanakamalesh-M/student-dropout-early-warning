@@ -1,0 +1,317 @@
+[
+  {
+    "example": 1,
+    "checkpoint_day": 30,
+    "risk_probability": 0.0938,
+    "risk_band": "High",
+    "withdrew_within_horizon": true,
+    "risk_factors": [
+      {
+        "label": "Share of due assessments submitted",
+        "impact": "High",
+        "sentence": "Share of due assessments submitted: the model weighted this heavily and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Submission rate compared with classmates",
+        "impact": "High",
+        "sentence": "Submission rate compared with classmates: the model weighted this heavily and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Assessment scores compared with classmates",
+        "impact": "Low",
+        "sentence": "Assessment scores compared with classmates: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Assessments due but not submitted",
+        "impact": "Low",
+        "sentence": "Assessments due but not submitted: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Days active in the last week",
+        "impact": "Low",
+        "sentence": "Days active in the last week: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Consecutive quiet weeks",
+        "impact": "Low",
+        "sentence": "Consecutive quiet weeks: the model gave this some weight and it contributed to a higher estimate for this student."
+      }
+    ],
+    "protective_factors": [
+      {
+        "label": "Weekly activity compared with classmates",
+        "impact": "Medium"
+      },
+      {
+        "label": "Time since last submission",
+        "impact": "Low"
+      },
+      {
+        "label": "Course activity in the last two weeks",
+        "impact": "Low"
+      }
+    ],
+    "context_factors": [
+      {
+        "label": "Point reached in the course",
+        "impact": "High"
+      },
+      {
+        "label": "No recorded data for: typical submission timing against the deadline",
+        "impact": "Low"
+      },
+      {
+        "label": "Assessments due so far",
+        "impact": "Low"
+      }
+    ],
+    "recommendations": [
+      {
+        "key": "assessment_planning_support",
+        "title": "Assessment planning support",
+        "description": "Help the student map out upcoming deadlines and agree a realistic plan for catching up on anything outstanding.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 30,
+        "matched_factor": "missed_assessments",
+        "rationale": "Suggested because the model weighted assessments due but not submitted for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      },
+      {
+        "key": "extension_or_deferral_options",
+        "title": "Explain extension and deferral options",
+        "description": "Make sure the student knows what extensions, deferrals and mitigating circumstances processes exist. Many students do not ask because they do not know these are available.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 15,
+        "matched_factor": "missed_assessments",
+        "rationale": "Suggested because the model weighted assessments due but not submitted for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      }
+    ],
+    "band_guidance": "Human review first. If the reviewer agrees, offer up to two supportive actions.",
+    "case_note": "This student sits in the High band. The model gave most weight to share of due assessments submitted, alongside submission rate compared with classmates and assessment scores compared with classmates. It also weighted weekly activity compared with classmates toward a lower estimate. Suggested next step: assessment planning support.",
+    "case_note_source": "template",
+    "disclaimer": "These are the factors the model weighted most heavily for this student. They describe the model's behaviour, not the causes of withdrawal, and they are not a judgement about this student. The risk figure is a probability, not a prediction of what will happen."
+  },
+  {
+    "example": 2,
+    "checkpoint_day": 30,
+    "risk_probability": 0.1462,
+    "risk_band": "Critical",
+    "withdrew_within_horizon": true,
+    "risk_factors": [
+      {
+        "label": "Share of due assessments submitted",
+        "impact": "High",
+        "sentence": "Share of due assessments submitted: the model weighted this heavily and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Submission rate compared with classmates",
+        "impact": "High",
+        "sentence": "Submission rate compared with classmates: the model weighted this heavily and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Active days compared with classmates",
+        "impact": "Medium",
+        "sentence": "Active days compared with classmates: the model gave this moderate weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Consecutive quiet weeks",
+        "impact": "Low",
+        "sentence": "Consecutive quiet weeks: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Assessments due but not submitted",
+        "impact": "Low",
+        "sentence": "Assessments due but not submitted: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Days active in the last week",
+        "impact": "Low",
+        "sentence": "Days active in the last week: the model gave this some weight and it contributed to a higher estimate for this student."
+      }
+    ],
+    "protective_factors": [
+      {
+        "label": "Credit load this term",
+        "impact": "Low"
+      },
+      {
+        "label": "Time since last submission",
+        "impact": "Low"
+      },
+      {
+        "label": "Total days active so far",
+        "impact": "Low"
+      }
+    ],
+    "context_factors": [
+      {
+        "label": "Point reached in the course",
+        "impact": "High"
+      },
+      {
+        "label": "How early the student registered",
+        "impact": "Low"
+      },
+      {
+        "label": "No recorded data for: typical submission timing against the deadline",
+        "impact": "Low"
+      }
+    ],
+    "recommendations": [
+      {
+        "key": "assessment_planning_support",
+        "title": "Assessment planning support",
+        "description": "Help the student map out upcoming deadlines and agree a realistic plan for catching up on anything outstanding.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 30,
+        "matched_factor": "missed_assessments",
+        "rationale": "Suggested because the model weighted assessments due but not submitted for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      },
+      {
+        "key": "extension_or_deferral_options",
+        "title": "Explain extension and deferral options",
+        "description": "Make sure the student knows what extensions, deferrals and mitigating circumstances processes exist. Many students do not ask because they do not know these are available.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 15,
+        "matched_factor": "missed_assessments",
+        "rationale": "Suggested because the model weighted assessments due but not submitted for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      },
+      {
+        "key": "advisor_check_in",
+        "title": "Advisor check-in",
+        "description": "A short, friendly message from the student's advisor asking how the module is going and whether anything is getting in the way. Opens a conversation rather than requesting an explanation.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 15,
+        "matched_factor": "low_engagement",
+        "rationale": "Suggested because the model weighted recent course activity for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      }
+    ],
+    "band_guidance": "Priority human review. A coordinated offer of support, with a named owner. The band is a prompt to look, not a decision that has been made.",
+    "case_note": "This student sits in the Critical band. The model gave most weight to share of due assessments submitted, alongside submission rate compared with classmates and active days compared with classmates. It also weighted credit load this term toward a lower estimate. Suggested next step: assessment planning support.",
+    "case_note_source": "template",
+    "disclaimer": "These are the factors the model weighted most heavily for this student. They describe the model's behaviour, not the causes of withdrawal, and they are not a judgement about this student. The risk figure is a probability, not a prediction of what will happen."
+  },
+  {
+    "example": 3,
+    "checkpoint_day": 30,
+    "risk_probability": 0.1462,
+    "risk_band": "Critical",
+    "withdrew_within_horizon": true,
+    "risk_factors": [
+      {
+        "label": "Share of due assessments submitted",
+        "impact": "High",
+        "sentence": "Share of due assessments submitted: the model weighted this heavily and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Submission rate compared with classmates",
+        "impact": "High",
+        "sentence": "Submission rate compared with classmates: the model weighted this heavily and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Consecutive quiet weeks",
+        "impact": "Low",
+        "sentence": "Consecutive quiet weeks: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Assessments due but not submitted",
+        "impact": "Low",
+        "sentence": "Assessments due but not submitted: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Days active in the last week",
+        "impact": "Low",
+        "sentence": "Days active in the last week: the model gave this some weight and it contributed to a higher estimate for this student."
+      },
+      {
+        "label": "Assessment scores compared with classmates",
+        "impact": "Low",
+        "sentence": "Assessment scores compared with classmates: the model gave this some weight and it contributed to a higher estimate for this student."
+      }
+    ],
+    "protective_factors": [
+      {
+        "label": "Credit load this term",
+        "impact": "Low"
+      },
+      {
+        "label": "Time since last submission",
+        "impact": "Low"
+      },
+      {
+        "label": "Total days active so far",
+        "impact": "Low"
+      }
+    ],
+    "context_factors": [
+      {
+        "label": "Point reached in the course",
+        "impact": "High"
+      },
+      {
+        "label": "No recorded data for: typical submission timing against the deadline",
+        "impact": "Low"
+      },
+      {
+        "label": "How early the student registered",
+        "impact": "Low"
+      }
+    ],
+    "recommendations": [
+      {
+        "key": "assessment_planning_support",
+        "title": "Assessment planning support",
+        "description": "Help the student map out upcoming deadlines and agree a realistic plan for catching up on anything outstanding.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 30,
+        "matched_factor": "missed_assessments",
+        "rationale": "Suggested because the model weighted assessments due but not submitted for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      },
+      {
+        "key": "extension_or_deferral_options",
+        "title": "Explain extension and deferral options",
+        "description": "Make sure the student knows what extensions, deferrals and mitigating circumstances processes exist. Many students do not ask because they do not know these are available.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 15,
+        "matched_factor": "missed_assessments",
+        "rationale": "Suggested because the model weighted assessments due but not submitted for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      },
+      {
+        "key": "advisor_check_in",
+        "title": "Advisor check-in",
+        "description": "A short, friendly message from the student's advisor asking how the module is going and whether anything is getting in the way. Opens a conversation rather than requesting an explanation.",
+        "intensity": "light",
+        "owner_role": "counsellor",
+        "typical_effort_minutes": 15,
+        "matched_factor": "disengaged",
+        "rationale": "Suggested because the model weighted the gap since this student was last active for this student.",
+        "status": "recommended",
+        "requires_human_review": true
+      }
+    ],
+    "band_guidance": "Priority human review. A coordinated offer of support, with a named owner. The band is a prompt to look, not a decision that has been made.",
+    "case_note": "This student sits in the Critical band. The model gave most weight to share of due assessments submitted, alongside submission rate compared with classmates and consecutive quiet weeks. It also weighted credit load this term toward a lower estimate. Suggested next step: assessment planning support.",
+    "case_note_source": "template",
+    "disclaimer": "These are the factors the model weighted most heavily for this student. They describe the model's behaviour, not the causes of withdrawal, and they are not a judgement about this student. The risk figure is a probability, not a prediction of what will happen."
+  }
+]
