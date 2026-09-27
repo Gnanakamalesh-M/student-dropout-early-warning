@@ -1,0 +1,5 @@
+band,min_probability,students_in_band,share_of_cohort,positives_in_band,precision_in_band,lift_in_band,cumulative_recall_at_or_above
+low,0.0,20381,0.6354,267,0.0131,0.42,1.0
+medium,0.02984,6379,0.1989,260,0.0408,1.32,0.7311
+high,0.05954,2831,0.0883,194,0.0685,2.21,0.4693
+critical,0.09385,2485,0.0775,272,0.1095,3.54,0.2739

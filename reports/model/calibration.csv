@@ -1,0 +1,2 @@
+brier_before,brier_after,brier_improvement,mean_predicted_before,mean_predicted_after,observed_rate
+0.029134,0.029008,0.000126,0.02694,0.03096,0.03096

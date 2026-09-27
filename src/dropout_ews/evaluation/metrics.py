@@ -221,8 +221,22 @@ def budget_sweep(
     its alert volume, which is how an unusable operating point gets reported as
     a success.
 
-    Budgets are shares of the scored cohort. Ties at the cut are included, so
-    the realised share can slightly exceed the budget.
+    Budgets are shares of the scored cohort, and **exactly** that many rows are
+    taken: the ranking is sorted with a stable sort and the top *k* selected by
+    position, not by thresholding on the score.
+
+    That distinction is not pedantic here. Isotonic calibration produces a
+    piecewise-constant mapping, so thousands of students share an identical
+    probability. Selecting by ``score >= threshold`` then pulls in the whole tied
+    block: on the real test set a 2% budget flagged 6.7% of the cohort, and the
+    2% and 5% budgets returned identical rows. Selecting the top *k* positionally
+    matches what an institution actually does — rank, then work down the list
+    until capacity runs out — and keeps the budget meaningful.
+
+    ``ties_at_cut`` reports how many rows share the cutoff probability, so the
+    arbitrariness of the tie-break stays visible instead of being hidden. A large
+    value means the students at the boundary are indistinguishable to the model
+    and the choice between them is not a modelling decision.
     """
     y_true = np.asarray(y_true)
     y_score = np.asarray(y_score, dtype="float64")
@@ -230,21 +244,22 @@ def budget_sweep(
     positives = int(y_true.sum())
     base_rate = positives / n if n else float("nan")
 
+    # Stable sort, so the tie-break is deterministic and reproducible.
     order = np.argsort(-y_score, kind="mergesort")
     rows = []
     for budget in budgets:
-        k = max(1, round(budget * n))
-        threshold = float(y_score[order[k - 1]])
-        flagged_mask = y_score >= threshold
-        flagged = int(flagged_mask.sum())
-        caught = int(y_true[flagged_mask].sum())
-        precision = caught / flagged if flagged else 0.0
+        k = min(n, max(1, round(budget * n)))
+        selected = order[:k]
+        cutoff = float(y_score[selected[-1]])
+        caught = int(y_true[selected].sum())
+        precision = caught / k
         rows.append(
             {
                 "alert_budget": budget,
-                "flagged": flagged,
-                "realised_share": round(flagged / n, 4),
-                "threshold": round(threshold, 5),
+                "flagged": k,
+                "realised_share": round(k / n, 4),
+                "cutoff_probability": round(cutoff, 5),
+                "ties_at_cut": int(np.isclose(y_score, cutoff).sum()),
                 "recall": round(caught / positives, 4) if positives else float("nan"),
                 "precision": round(precision, 4),
                 "lift": round(precision / base_rate, 2) if base_rate else float("nan"),

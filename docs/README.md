@@ -8,6 +8,7 @@
 | [DATA_CARD.md](DATA_CARD.md) | Data sources, provenance, real vs synthetic, known limitations |
 | [EDA_FINDINGS.md](EDA_FINDINGS.md) | What the data actually shows, including findings that contradict the original plan |
 | [FEATURE_DICTIONARY.md](FEATURE_DICTIONARY.md) | Every feature, and the ablation study that decided the allowlist |
+| [MODEL_CARD.md](MODEL_CARD.md) | Performance, limitations, and why the primary model is not the most accurate one |
 | [ETHICS.md](ETHICS.md) | Privacy, fairness, governance, and what this system must never be used for |
 
 ## Architecture decision records
@@ -26,7 +27,6 @@ new ADR that supersedes the old one, rather than an edit.
 
 ## Written in later phases
 
-- `MODEL_CARD.md` (Phase 6) — metrics, operating point, limitations
 - `DATABASE.md` (Phase 9) — schema and ER diagram
 - `API.md` (Phase 8) — endpoint reference
 - `MONITORING.md` (Phase 11) — drift detection and the retraining policy

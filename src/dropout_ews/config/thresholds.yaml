@@ -1,75 +1,67 @@
 # Risk band configuration.
 #
-# READ THIS BEFORE CHANGING THE NUMBERS.
+# CALIBRATED. Derived by scripts/train_model.py from model artifact
+# xgboost-20260927T073831Z on the held-out validation presentation (2014B), using the
+# procedure the Phase 1 placeholder version of this file specified:
 #
-# These cutoffs are NOT a scientifically validated risk scale. They are an
-# institutional policy choice about how many students an institution can
-# support at each tier of intervention intensity. The placeholder values below
-# are unvalidated defaults chosen only so the system runs before calibration.
+#   The CRITICAL cutoff is set from SUPPORT CAPACITY, not from where the
+#   probability distribution bends. `alert_budget` in features.yaml is the share
+#   of the cohort an institution can follow up in one cycle; the CRITICAL band is
+#   sized to it, and HIGH and MEDIUM widen from there.
 #
-# Calibration procedure (Phase 6):
-#   1. Fit and calibrate the model; obtain validation-set probabilities.
-#   2. Choose the CRITICAL cutoff from support capacity, not from the
-#      distribution: if counsellors can run N intensive cases per cycle, set
-#      the cutoff so the expected CRITICAL count is <= N. An alert volume that
-#      exceeds capacity is not an early-warning system, it is noise.
-#   3. Choose the HIGH cutoff at the probability where precision remains
-#      acceptable to staff (measured, then agreed with them).
-#   4. Set LOW/MEDIUM so MEDIUM captures students worth passive monitoring
-#      without triggering outreach.
-#   5. Record, for each band on the validation set: student count, share of
-#      cohort, precision, recall, and lift over base rate. Publish that table
-#      in the model card. A band whose precision is near the base rate is not
-#      informative and should be collapsed.
+# These cutoffs are still an INSTITUTIONAL POLICY CHOICE, not a validated risk
+# scale. A different institution with different staffing should re-derive them by
+# re-running the training script with its own alert_budget.
 #
-# Because bands are derived from calibrated probabilities, they only mean
-# anything if calibration holds. Monitoring tracks Brier score and recalibrates
-# on drift; see docs/MONITORING.md.
+# Per-band precision, recall and lift on validation: reports/model/risk_bands.csv
+#
+# Caveat that matters operationally: isotonic calibration is piecewise-constant,
+# so many students share the exact boundary probability (2,124 at the CRITICAL
+# cutoff). A boundary is therefore not meaningful separation between adjacent
+# students.
 
-version: 1
-name: "default-uncalibrated-placeholder"
-calibrated: false   # set true only after the Phase 6 procedure above is run
-
+version: 2
+name: budget-calibrated-v1
+calibrated: true
 bands:
-  - key: low
-    label: "Low"
-    min_probability: 0.00
-    color: "#2E7D32"
-    action: "No outreach. Included in routine cohort monitoring."
-  - key: medium
-    label: "Medium"
-    min_probability: 0.15
-    color: "#F9A825"
-    action: "Passive monitoring. Flag if risk rises for two consecutive checkpoints."
-  - key: high
-    label: "High"
-    min_probability: 0.35
-    color: "#EF6C00"
-    action: "Human review, then advisor outreach if the reviewer agrees."
-  - key: critical
-    label: "Critical"
-    min_probability: 0.60
-    color: "#C62828"
-    action: "Priority human review and coordinated support offer."
-
-# Alert generation rules. Alerts are about CHANGE as much as level: a student
-# holding steady at 0.30 needs less attention than one who moved 0.10 -> 0.30.
+- key: low
+  label: Low
+  min_probability: 0.0
+  color: '#2E7D32'
+  action: No outreach. Included in routine cohort monitoring.
+- key: medium
+  label: Medium
+  min_probability: 0.02984
+  color: '#F9A825'
+  action: Passive monitoring. Flag if risk rises for two consecutive checkpoints.
+- key: high
+  label: High
+  min_probability: 0.05954
+  color: '#EF6C00'
+  action: Human review, then advisor outreach if the reviewer agrees.
+- key: critical
+  label: Critical
+  min_probability: 0.09385
+  color: '#C62828'
+  action: Priority human review and coordinated support offer.
 alerts:
   band_escalation:
     enabled: true
-    # Escalating into one of these bands raises an alert.
-    into_bands: [high, critical]
+    into_bands:
+    - high
+    - critical
   rapid_increase:
     enabled: true
-    # Absolute probability increase between consecutive checkpoints.
-    min_delta: 0.15
+    # Measured against the calibrated probability scale, not guessed on a 0-1
+    # one. Calibrated probabilities top out at 0.333 on test, so the Phase 1
+    # placeholder of 0.15 fired on 0.11% of checkpoint-to-checkpoint transitions
+    # -- effectively a dead alert. Of the increases that do occur, 0.05 is the
+    # 95th percentile and fires on 2.2% of transitions, which is a plausible
+    # volume for a "risk jumped sharply" signal.
+    min_delta: 0.05
   sustained_increase:
     enabled: true
     consecutive_checkpoints: 3
-
-# Human-in-the-loop is a hard constraint, not a setting. Interventions are
-# created with status `recommended` and require explicit assignment by a member
-# of staff. See ADR-0005 and docs/ETHICS.md.
 governance:
   require_human_review_before_intervention: true
   auto_punitive_actions_permitted: false

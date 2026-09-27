@@ -1,0 +1,6 @@
+strategy,cv_pr_auc,cv_std
+undersample majority,0.106,0.0084
+none,0.104,0.0078
+SMOTE + undersample,0.1031,0.0071
+class weights,0.0996,0.0124
+SMOTE,0.086,0.0097

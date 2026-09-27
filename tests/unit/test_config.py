@@ -116,11 +116,88 @@ def test_shipped_threshold_config_is_valid() -> None:
     assert [b.key for b in config.bands] == ["low", "medium", "high", "critical"]
 
 
-def test_shipped_thresholds_are_flagged_uncalibrated() -> None:
-    """The default cutoffs are placeholders. Until the Phase 6 calibration
-    procedure runs, the config must not claim otherwise — this guards against
-    presenting arbitrary numbers as validated."""
-    assert load_threshold_config().calibrated is False
+def test_shipped_thresholds_are_calibrated_and_say_how() -> None:
+    """The shipped bands were derived by the Phase 6 procedure, so the config
+    now claims calibration — and must carry a name that identifies the
+    derivation rather than the Phase 1 placeholder.
+
+    Until Phase 6 this asserted ``calibrated is False``. The invariant changed
+    when the bands were genuinely derived, but it did not disappear: the pairing
+    below is what stops arbitrary numbers being presented as validated.
+    """
+    config = load_threshold_config()
+    assert config.calibrated is True
+    assert "placeholder" not in config.name
+    assert config.version >= 2
+
+
+def test_uncalibrated_config_must_not_claim_a_derived_name() -> None:
+    """The complement: a config flagged uncalibrated has to be labelled as a
+    placeholder, so the two fields cannot drift apart."""
+    from dropout_ews.config.settings import ThresholdConfig
+
+    payload = {
+        "version": 1,
+        "name": "default-uncalibrated-placeholder",
+        "calibrated": False,
+        "bands": [
+            {"key": "low", "label": "Low", "min_probability": 0.0, "color": "#0", "action": "a"},
+            {"key": "high", "label": "High", "min_probability": 0.5, "color": "#1", "action": "b"},
+        ],
+    }
+    config = ThresholdConfig.model_validate(payload)
+    assert config.calibrated is False
+    assert "placeholder" in config.name
+
+
+def test_rapid_increase_threshold_suits_the_calibrated_probability_scale() -> None:
+    """Calibrated probabilities reach only about 0.33 on test, so the Phase 1
+    placeholder delta of 0.15 fired on 0.11% of checkpoint transitions. An alert
+    rule that never fires is worse than none, because it reads as coverage."""
+    rule = load_threshold_config().alerts.rapid_increase
+    assert rule.enabled is True
+    assert rule.min_delta <= 0.10
+
+
+def _fixed_band_config() -> ThresholdConfig:
+    """A config with known cutoffs, for testing ``band_for`` logic.
+
+    Deliberately not the shipped config. Band cutoffs are recalibrated whenever
+    the model is retrained, so asserting logic against live values couples the
+    test to the one thing that is meant to change — and it did break when Phase 6
+    replaced the Phase 1 placeholders.
+    """
+    return ThresholdConfig.model_validate(
+        {
+            "version": 99,
+            "name": "fixture",
+            "calibrated": True,
+            "bands": [
+                {"key": "low", "label": "L", "min_probability": 0.0, "color": "#0", "action": "a"},
+                {
+                    "key": "medium",
+                    "label": "M",
+                    "min_probability": 0.15,
+                    "color": "#1",
+                    "action": "b",
+                },
+                {
+                    "key": "high",
+                    "label": "H",
+                    "min_probability": 0.35,
+                    "color": "#2",
+                    "action": "c",
+                },
+                {
+                    "key": "critical",
+                    "label": "C",
+                    "min_probability": 0.60,
+                    "color": "#3",
+                    "action": "d",
+                },
+            ],
+        }
+    )
 
 
 @pytest.mark.parametrize(
@@ -137,7 +214,22 @@ def test_shipped_thresholds_are_flagged_uncalibrated() -> None:
     ],
 )
 def test_band_for_assigns_expected_band(probability: float, expected: str) -> None:
-    assert load_threshold_config().band_for(probability).key == expected
+    assert _fixed_band_config().band_for(probability).key == expected
+
+
+def test_shipped_band_boundaries_assign_to_the_upper_band() -> None:
+    """The same boundary rule, checked against whatever cutoffs are live, so a
+    recalibration cannot silently invert the convention."""
+    config = load_threshold_config()
+    for band in config.bands:
+        assert config.band_for(band.min_probability).key == band.key
+
+
+def test_shipped_bands_cover_the_calibrated_probability_range() -> None:
+    """Calibrated probabilities on test span roughly 0 to 0.33. Every band must
+    be reachable within that range, or a tier exists that no student can enter."""
+    config = load_threshold_config()
+    assert all(band.min_probability < 0.34 for band in config.bands)
 
 
 @pytest.mark.parametrize("probability", [-0.01, 1.01])

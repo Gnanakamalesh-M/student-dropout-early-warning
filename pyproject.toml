@@ -100,11 +100,14 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
-# scikit-learn requires the estimator API to use the capitalised `X`
-# argument name; renaming it would break Pipeline and cross_val_score.
+# N806: tests mirror scikit-learn's `X`/`y` naming for the design matrix, which
+# is clearer to a reader than an invented lowercase alternative.
+"tests/*" = ["S101", "N806"]
+# scikit-learn requires the estimator API to use the capitalised `X` argument
+# name; renaming it would break Pipeline and cross_val_score.
 "src/dropout_ews/preprocessing/*" = ["N803"]
 "src/dropout_ews/models/base.py" = ["N803"]
+"src/dropout_ews/models/calibration.py" = ["N803"]
 "notebooks/*" = ["E402"]
 
 [tool.mypy]

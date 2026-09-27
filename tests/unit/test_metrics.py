@@ -178,6 +178,38 @@ def test_budget_sweep_recall_rises_with_budget() -> None:
     assert sweep["precision"].iloc[0] >= sweep["precision"].iloc[-1]
 
 
+def test_budget_sweep_takes_exactly_k_rows_despite_heavy_ties() -> None:
+    """The bug isotonic calibration exposed.
+
+    Isotonic produces a piecewise-constant mapping, so thousands of students
+    share one probability. Selecting by ``score >= threshold`` pulls in the whole
+    tied block: on the real test set a 2% budget flagged 6.7% of the cohort and
+    the 2% and 5% budgets returned identical rows. Selecting the top k
+    positionally keeps the budget meaningful.
+    """
+    # 1000 rows, only three distinct probabilities: maximal ties.
+    y = np.zeros(1000, dtype=int)
+    p = np.concatenate([np.full(300, 0.4), np.full(300, 0.2), np.full(400, 0.05)])
+    y[:40] = 1
+
+    sweep = budget_sweep(y, p, budgets=(0.02, 0.05, 0.10, 0.20))
+    assert sweep["flagged"].tolist() == [20, 50, 100, 200]
+    assert sweep["realised_share"].tolist() == [0.02, 0.05, 0.10, 0.20]
+    # Budgets inside the same tied block must still differ.
+    assert sweep["flagged"].is_unique
+
+
+def test_budget_sweep_reports_tie_size_at_the_cut() -> None:
+    """Surfacing the tie makes the arbitrariness of the tie-break visible: a
+    large value means the students at the boundary are indistinguishable to the
+    model, so choosing between them is not a modelling decision."""
+    y = np.zeros(1000, dtype=int)
+    y[:30] = 1
+    p = np.concatenate([np.full(500, 0.3), np.full(500, 0.1)])
+    row = budget_sweep(y, p, budgets=(0.10,)).iloc[0]
+    assert row["ties_at_cut"] == 500
+
+
 def test_budget_sweep_on_a_perfect_ranker_catches_everything_it_can() -> None:
     """With 10 positives in 100 rows and a 10% budget, a perfect ranker should
     reach full recall at full precision."""
