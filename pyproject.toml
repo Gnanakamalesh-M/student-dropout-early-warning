@@ -104,6 +104,7 @@ ignore = [
 # scikit-learn requires the estimator API to use the capitalised `X`
 # argument name; renaming it would break Pipeline and cross_val_score.
 "src/dropout_ews/preprocessing/*" = ["N803"]
+"src/dropout_ews/models/base.py" = ["N803"]
 "notebooks/*" = ["E402"]
 
 [tool.mypy]

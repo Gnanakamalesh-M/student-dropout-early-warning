@@ -1,0 +1,4 @@
+model,cv_pr_auc,cv_pr_auc_std,test_pr_auc,test_pr_auc_ci_low,test_pr_auc_ci_high,test_roc_auc,test_brier,threshold,test_recall,test_precision,test_lift,test_flagged_share
+dummy (base rate),0.0272,0.001,0.029,0.0274,0.0306,0.5,0.0282,0.02723,1.0,0.029,1.0,1.0
+logistic regression,0.0872,0.0051,0.0719,0.0657,0.0801,0.7307,0.2086,0.38677,0.7944,0.0482,1.66,0.4784
+random forest,0.0971,0.0121,0.0951,0.0843,0.109,0.7415,0.0627,0.16275,0.7937,0.0494,1.7,0.4664

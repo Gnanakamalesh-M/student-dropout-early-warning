@@ -60,6 +60,9 @@ features: ## Build the feature matrix and the train/validation/test split
 leakage: ## Run the as-of property test and allowlist guards on their own
 	$(PYTHON) -m pytest tests/ml -m ml -q
 
+baselines: ## Train the Phase 5 baselines and write reports/baseline_comparison.md
+	$(PYTHON) scripts/train_baselines.py
+
 notebooks: ## Execute the EDA notebooks to check they still run
 	# Not part of CI: these need data/raw/oulad/, which is not committed.
 	# Run after `make data`.

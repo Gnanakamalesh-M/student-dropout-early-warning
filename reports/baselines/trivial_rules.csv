@@ -1,0 +1,5 @@
+rule,test_pr_auc,test_precision,test_recall,test_lift,flagged_share
+rule: no clicks in 14d,0.0393,0.029,1.0,1.0,1.0
+rule: no clicks in 7d,0.041,0.029,1.0,1.0,1.0
+rule: inverse clicks_28d,0.048,0.0387,0.8,1.33,0.6004
+rule: days since last activity,0.0458,0.0361,0.8587,1.24,0.69

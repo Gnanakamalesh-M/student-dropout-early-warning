@@ -25,9 +25,37 @@ evaluation:
   # of imbalance (3.02% positive).
   primary_metric: average_precision
 
-  # The operating point is selected to hit this positive-class recall on the
-  # validation presentation. Precision and absolute alert volume at that point
-  # are reported alongside.
+  # ---------------------------------------------------------------------------
+  # Operating point: capacity-first, not recall-first
+  # ---------------------------------------------------------------------------
+  # Phase 5 measured what a recall target actually costs on the real test set
+  # (random forest, reports/baseline_comparison.md):
+  #
+  #   target recall   precision   lift   share of cohort flagged
+  #   0.5             7.6%        2.6x   19%
+  #   0.8             4.9%        1.7x   47%
+  #   0.9             4.1%        1.4x   64%
+  #
+  # A recall target of 0.80 therefore means contacting nearly half the cohort at
+  # 4.9% precision. No institution can staff that, so the recall-first framing
+  # committed to in Phase 1 was the wrong control variable -- right in spirit
+  # (do not optimise accuracy) but unusable as a knob.
+  #
+  # Asked the other way round, the same model is useful:
+  #
+  #   alert budget    recall   precision   lift
+  #   1%              7.1%     20.5%       7.1x
+  #   5%              21.8%    12.6%       4.4x
+  #   10%             32.1%    9.3%        3.2x
+  #
+  # `alert_budget` is therefore the primary operating control: the share of the
+  # cohort an institution can actually follow up in a cycle. Recall becomes a
+  # reported consequence rather than a target.
+  alert_budget: 0.05
+
+  # Retained for the published tradeoff table (threshold_sweep), so the recall
+  # view stays visible rather than being quietly dropped once it proved
+  # inconvenient. NOT the operating point.
   target_recall: 0.80
 
   # Metrics are always broken out per checkpoint as well as in aggregate.

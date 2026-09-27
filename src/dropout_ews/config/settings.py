@@ -57,7 +57,19 @@ class TaskConfig(BaseModel):
 
 class EvaluationConfig(BaseModel):
     primary_metric: str = "average_precision"
+
+    alert_budget: float = Field(default=0.05, gt=0.0, le=1.0)
+    """Share of the cohort an institution can follow up in one cycle.
+
+    The primary operating control. Phase 5 showed a recall target is the wrong
+    knob: 80% recall means flagging 47% of the cohort at 4.9% precision, which
+    no institution can staff. See features.yaml for the measured tradeoff.
+    """
+
     target_recall: float = Field(ge=0.0, le=1.0)
+    """Kept for the published recall/precision tradeoff table, not as the
+    operating point."""
+
     report_per_checkpoint: bool = True
     bootstrap_iterations: int = Field(default=1000, ge=0)
     random_seed: int = 42
