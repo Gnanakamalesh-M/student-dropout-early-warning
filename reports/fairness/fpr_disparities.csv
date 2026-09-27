@@ -1,0 +1,6 @@
+attribute,metric,worst_group,worst_rate,best_group,best_rate,gap,intervals_overlap,distinguishable_from_noise
+imd_band,false_positive_rate,10-20%,0.0741,missing,0.0312,0.0429,False,True
+region,false_positive_rate,North Western Region,0.0684,Ireland,0.0293,0.0391,False,True
+age_band,false_positive_rate,0-35,0.0597,35-55,0.0485,0.0112,False,True
+disability,false_positive_rate,Y,0.0656,N,0.0552,0.0104,False,True
+gender,false_positive_rate,F,0.0599,M,0.0529,0.007,False,True

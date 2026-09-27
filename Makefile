@@ -11,7 +11,7 @@ PYTHON := $(BIN)/python
 
 .DEFAULT_GOAL := help
 .PHONY: help setup install lint format typecheck test test-fast test-ml test-integration \
-        check clean data eda notebooks
+        check clean data eda notebooks fairness
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -68,6 +68,9 @@ model: ## Tune, calibrate and register the primary XGBoost model
 
 explain: ## Global importance, attribution stability, and worked examples
 	$(PYTHON) scripts/run_explainability.py
+
+fairness: ## Per-subgroup error rates with intervals -> reports/fairness_audit.md
+	$(PYTHON) scripts/run_fairness_audit.py
 
 api: ## Run the API locally with reload
 	$(BIN)/uvicorn backend.app.main:app --reload --port 8000

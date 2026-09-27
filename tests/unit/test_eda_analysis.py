@@ -15,6 +15,7 @@ import pandas as pd
 import pytest
 
 from dropout_ews.eda import analysis as eda
+from dropout_ews.evaluation.metrics import wilson_interval
 
 
 @pytest.fixture
@@ -251,21 +252,21 @@ def test_trivial_baselines_compute_precision_and_recall() -> None:
 def test_wilson_interval_stays_within_zero_and_one(successes: int, n: int) -> None:
     """The reason for using Wilson rather than the normal approximation: at a
     ~3% rate the normal interval can extend below zero."""
-    low, high = eda._wilson_interval(successes, n)
+    low, high = wilson_interval(successes, n)
     assert 0.0 <= low <= high <= 1.0
 
 
 def test_wilson_interval_brackets_the_point_estimate() -> None:
-    low, high = eda._wilson_interval(30, 1000)
+    low, high = wilson_interval(30, 1000)
     assert low < 0.03 < high
 
 
 def test_wilson_interval_handles_an_empty_group() -> None:
-    low, high = eda._wilson_interval(0, 0)
+    low, high = wilson_interval(0, 0)
     assert np.isnan(low) and np.isnan(high)
 
 
 def test_wilson_interval_narrows_with_sample_size() -> None:
-    small = eda._wilson_interval(3, 100)
-    large = eda._wilson_interval(300, 10_000)
+    small = wilson_interval(3, 100)
+    large = wilson_interval(300, 10_000)
     assert (large[1] - large[0]) < (small[1] - small[0])

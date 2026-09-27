@@ -100,6 +100,24 @@ class EvaluationResult:
         return row
 
 
+def wilson_interval(successes: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for a binomial proportion.
+
+    Used rather than the normal approximation because the rates here are around
+    3%, where the normal interval is unreliable and can extend below zero.
+
+    Public and shared: the EDA subgroup screening and the fairness audit both need
+    it, so it does not belong as a private helper inside either one.
+    """
+    if n == 0:
+        return (float("nan"), float("nan"))
+    phat = successes / n
+    denominator = 1 + z**2 / n
+    centre = phat + z**2 / (2 * n)
+    spread = z * np.sqrt(phat * (1 - phat) / n + z**2 / (4 * n**2))
+    return ((centre - spread) / denominator, (centre + spread) / denominator)
+
+
 def ranking_metrics(y_true: np.ndarray, y_score: np.ndarray) -> RankingMetrics:
     """Threshold-free metrics.
 

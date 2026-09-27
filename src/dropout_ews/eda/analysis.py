@@ -15,13 +15,13 @@ the training pipeline or the API.
 from __future__ import annotations
 
 import duckdb
-import numpy as np
 import pandas as pd
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.metrics import roc_auc_score
 
 from dropout_ews.data.clickstream import STUDENT_DAY_PARQUET
 from dropout_ews.data.loaders import load_student_info
+from dropout_ews.evaluation.metrics import wilson_interval
 
 KEYS = ["code_module", "code_presentation", "id_student"]
 
@@ -351,7 +351,7 @@ def subgroup_base_rates(windows: pd.DataFrame, attributes: list[str] | None = No
         for value, record in grouped.iterrows():
             n = int(record["size"])
             successes = int(record["sum"])
-            low, high = _wilson_interval(successes, n)
+            low, high = wilson_interval(successes, n)
             rows.append(
                 {
                     "attribute": attribute,
@@ -364,22 +364,6 @@ def subgroup_base_rates(windows: pd.DataFrame, attributes: list[str] | None = No
                 }
             )
     return pd.DataFrame(rows)
-
-
-def _wilson_interval(successes: int, n: int, z: float = 1.96) -> tuple[float, float]:
-    """Wilson score interval for a binomial proportion.
-
-    Used rather than the normal approximation because positive rates here are
-    around 3%, where the normal interval is unreliable and can extend below
-    zero.
-    """
-    if n == 0:
-        return (float("nan"), float("nan"))
-    phat = successes / n
-    denominator = 1 + z**2 / n
-    centre = phat + z**2 / (2 * n)
-    spread = z * np.sqrt(phat * (1 - phat) / n + z**2 / (4 * n**2))
-    return ((centre - spread) / denominator, (centre + spread) / denominator)
 
 
 # ---------------------------------------------------------------------------

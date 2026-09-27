@@ -41,22 +41,94 @@ Student identity in the application is an opaque `student_code`, not a name.
 
 ## Fairness
 
-Phase 12 reports per-subgroup recall, precision, and false-positive rate with
-confidence intervals.
+`make fairness` regenerates `reports/fairness_audit.md` and the CSVs under
+`reports/fairness/`. Five attributes are audited — gender, age band, deprivation
+band, declared disability, region — read from the isolated
+`student_demographics` source. `evaluation/fairness.py` is their only consumer;
+none is a feature, and a test asserts none appears in the allowlist.
 
-Two honesty commitments:
+### What the audit tests, and what it refuses to test
 
-1. **Excluding protected attributes from features does not make a model fair.**
-   Proxies exist — engagement patterns correlate with employment, caring
-   responsibilities, and connectivity. Measuring subgroup performance is
-   therefore necessary regardless of what the model can see.
-2. **Where subgroup samples are too small to support a conclusion, we say so**
-   rather than reporting a reassuring point estimate. A wide confidence
-   interval is a finding, not a failure to report.
+**Alert-rate differences are expected and are not the finding.** A calibrated
+model flags higher-base-rate groups more often because those students really do
+withdraw more often. Phase 3 recorded those base rates before any model existed,
+precisely so this audit could not mistake them for model behaviour. Demographic
+parity is the wrong test here, and chasing it would mean withholding support
+from the group that needs it most.
 
-Note the direction that matters here: a *lower* false-negative rate for a group
-is good (more students found), while a higher false-positive rate mainly costs
-staff time. This asymmetry should shape how any disparity is interpreted.
+**The question is whether errors differ**, and specifically the false-negative
+rate: an at-risk student the model misses receives no offer of help. A higher
+false-positive rate mostly costs staff time — it matters, but it is not the same
+kind of harm.
+
+**A gap whose confidence intervals overlap is not a finding.** Ranking groups and
+writing up the largest difference is how a fairness audit manufactures
+conclusions; at a 3% positive rate almost any ranking produces a plausible gap.
+Overlap is checked, and the column is named `distinguishable_from_noise` rather
+than `conclusive` so it cannot be confused with "this group had enough data".
+
+### Result at the 5% alert budget
+
+**No false-negative gap survives the overlap check.** Every one of the five
+attributes shows overlapping intervals:
+
+| Attribute | Worst-served | FNR | Best-served | FNR | Gap | Distinguishable |
+|---|---|---:|---|---:|---:|---|
+| region | Ireland | 85.2% | North Western | 67.8% | 17.4pp | no |
+| imd_band | 60–70% | 82.4% | 0–10% | 68.0% | 14.4pp | no |
+| disability | N | 74.7% | Y | 69.1% | 5.7pp | no |
+| age_band | 35–55 | 75.3% | 0–35 | 73.3% | 2.0pp | no |
+| gender | F | 74.7% | M | 73.4% | 1.4pp | no |
+
+Three things to be clear about:
+
+1. **This is an absence of evidence of disparity, not evidence of fairness.**
+   The distinction is the whole point. A 17-point regional gap that fails the
+   overlap check is not a gap that has been ruled out — it is a gap this sample
+   cannot resolve either way. A larger cohort might well resolve it.
+2. **The overall false-negative rate is ~74% in every group.** That is the
+   context for the table above: the model already misses roughly three of every
+   four withdrawing students everywhere. Subgroup gaps here are differences in
+   how a large failure is distributed, not the difference between working and
+   not working.
+3. **`disability Y` reads the way a calibrated model should.** Its base rate is
+   higher (4.65% against 2.74%), so its alert rate is higher (7.70% against
+   6.06%) — the expected consequence of calibration, not a disparity — and its
+   false-negative rate is slightly *lower*, meaning marginally more of those
+   students are found.
+
+### The one directional finding worth naming
+
+`disability Y` carries the largest calibration gap in the audit, and it points
+the wrong way: mean predicted risk 3.32% against an observed 4.65%. The model
+**understates** risk for the group with the highest base rate. It is small
+(-1.3pp), it is not tested for significance, and it does not currently change
+who gets flagged at a 5% budget. It is recorded here because it is the only
+result in the audit with a direction that would deny support if it grew, and
+because suppressing a small inconvenient number is how the next audit ends up
+unable to see a large one.
+
+### Groups the audit could not assess
+
+`age_band 55<=` — 390 rows, 13 positives. Reported as inconclusive rather than
+omitted. Its point-estimate recall is high and completely uninformative: the
+interval spans most of [0, 1]. An audit that silently drops what it could not
+measure reads as though it measured everything.
+
+### What this audit does not establish
+
+- **Excluding protected attributes from features does not make a model fair.**
+  Engagement correlates with employment, caring responsibilities and
+  connectivity, so proxies exist whatever the feature list says. That is why
+  error rates are measured rather than assumed.
+- **Intersections are not tested.** Each attribute is assessed marginally, and
+  at a 3% positive rate this cohort cannot support intersectional cells. A
+  disparity affecting a combination of attributes would not appear here.
+- **The label under-counts disengagement.** It records formal de-registration;
+  students who stop engaging without withdrawing are labelled negative. That
+  under-counting is unlikely to be uniform across groups, which would bias every
+  rate in this audit in a direction it cannot measure.
+- **One institution, one cohort, 2013–2014.** These results do not transfer.
 
 ## Governance — human in the loop
 

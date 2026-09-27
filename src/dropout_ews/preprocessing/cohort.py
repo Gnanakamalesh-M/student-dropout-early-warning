@@ -72,6 +72,16 @@ class CohortZScorer(BaseEstimator, TransformerMixin):
             column: (float(X[column].mean(skipna=True)), float(X[column].std(skipna=True)))
             for column in self.fitted_columns_
         }
+        if not self.fitted_columns_:
+            # None of the configured columns are present. The documented contract
+            # is that missing columns are skipped, so the all-missing case must be
+            # a no-op rather than a crash: `agg([])` raises "No objects to
+            # concatenate", which reads as a data problem rather than a
+            # configuration one and sent me looking in the wrong place.
+            self.cohort_stats_ = pd.DataFrame()
+            self.n_cohorts_ = 0
+            return self
+
         grouped = X.groupby(COHORT_KEYS, dropna=False)
         stats = grouped[self.fitted_columns_].agg(["mean", "std", "size"])
         # Drop cohorts too small for a trustworthy standard deviation.

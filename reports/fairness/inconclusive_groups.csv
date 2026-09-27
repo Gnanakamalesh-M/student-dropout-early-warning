@@ -1,0 +1,2 @@
+attribute,value,rows,positives,reason
+age_band,55<=,390,13,too few positives
