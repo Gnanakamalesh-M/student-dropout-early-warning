@@ -76,9 +76,7 @@ def test_threshold_boundary_is_inclusive() -> None:
     """A score exactly at the cutoff is flagged. The operating point is derived
     positionally from the alert budget, so the k-th score *is* the threshold; an
     exclusive comparison would drop that student and undershoot the budget."""
-    m = fairness.group_metrics(
-        "gender", "F", np.array([1, 1]), np.array([0.5, 0.4999]), THRESHOLD
-    )
+    m = fairness.group_metrics("gender", "F", np.array([1, 1]), np.array([0.5, 0.4999]), THRESHOLD)
     assert m.flagged == 1
 
 
@@ -95,9 +93,7 @@ def test_metrics_are_nan_not_zero_when_a_group_has_no_positives() -> None:
 
 
 def test_precision_is_nan_when_nothing_is_flagged() -> None:
-    m = fairness.group_metrics(
-        "gender", "F", np.array([1, 0]), np.array([0.1, 0.1]), THRESHOLD
-    )
+    m = fairness.group_metrics("gender", "F", np.array([1, 0]), np.array([0.1, 0.1]), THRESHOLD)
     assert np.isnan(m.precision)
     assert m.recall == pytest.approx(0.0)  # answerable: there was a positive to catch
 
@@ -110,9 +106,7 @@ def test_calibration_gap_signs_the_direction_of_the_error() -> None:
     understated = fairness.group_metrics(
         "d", "Y", y_true, np.array([0.2, 0.2, 0.2, 0.2]), THRESHOLD
     )
-    overstated = fairness.group_metrics(
-        "d", "N", y_true, np.array([0.8, 0.8, 0.8, 0.8]), THRESHOLD
-    )
+    overstated = fairness.group_metrics("d", "N", y_true, np.array([0.8, 0.8, 0.8, 0.8]), THRESHOLD)
     assert understated.calibration_gap == pytest.approx(-0.3)
     assert overstated.calibration_gap == pytest.approx(0.3)
 
@@ -161,9 +155,7 @@ def test_inconclusive_groups_are_listed_with_a_reason() -> None:
 
 def test_inconclusive_list_distinguishes_too_few_rows() -> None:
     frame = _frame({"F": (40, 60, 0.5), "M": (60, 940, 0.5)})
-    listed = fairness.inconclusive_groups(
-        fairness.audit(frame, THRESHOLD, attributes=("gender",))
-    )
+    listed = fairness.inconclusive_groups(fairness.audit(frame, THRESHOLD, attributes=("gender",)))
     assert listed.iloc[0]["reason"] == "too few rows"
 
 
@@ -177,9 +169,7 @@ def test_a_gap_within_noise_is_not_reported_as_a_finding() -> None:
     estimates differ; the intervals overlap; the audit must say so rather than
     rank them and write up the difference."""
     frame = _frame({"F": (100, 3000, 0.26), "M": (100, 3000, 0.30)})
-    gaps = fairness.disparities(
-        fairness.audit(frame, THRESHOLD, attributes=("gender",))
-    )
+    gaps = fairness.disparities(fairness.audit(frame, THRESHOLD, attributes=("gender",)))
     assert len(gaps) == 1
     row = gaps.iloc[0]
     assert row["gap"] == pytest.approx(0.04, abs=0.01)
@@ -191,9 +181,7 @@ def test_a_real_gap_survives_the_overlap_check() -> None:
     """The guard must not be inert. A model catching 80% in one group and 10% in
     another, with enough positives to separate the intervals, is a finding."""
     frame = _frame({"F": (300, 3000, 0.10), "M": (300, 3000, 0.80)})
-    gaps = fairness.disparities(
-        fairness.audit(frame, THRESHOLD, attributes=("gender",))
-    )
+    gaps = fairness.disparities(fairness.audit(frame, THRESHOLD, attributes=("gender",)))
     row = gaps.iloc[0]
     assert row["worst_group"] == "F"  # highest false-negative rate
     assert row["gap"] == pytest.approx(0.70, abs=0.01)
@@ -249,9 +237,7 @@ def test_disparities_skips_an_attribute_with_only_one_assessable_group() -> None
     """A gap needs two groups. With one assessable group there is nothing to
     compare, and the attribute must be absent rather than reported as a zero gap."""
     frame = _frame({"F": (100, 2000, 0.3), "M": (13, 200, 0.3)})
-    gaps = fairness.disparities(
-        fairness.audit(frame, THRESHOLD, attributes=("gender",))
-    )
+    gaps = fairness.disparities(fairness.audit(frame, THRESHOLD, attributes=("gender",)))
     assert gaps.empty
     # Columns must survive the empty case, or a caller filtering the result
     # crashes on exactly the outcome a small cohort most often produces.
@@ -264,9 +250,7 @@ def test_inconclusive_groups_are_excluded_from_gap_ranking_by_default() -> None:
     would top the ranking and produce the audit's headline finding out of 13
     students."""
     frame = _frame({"F": (13, 377, 0.0), "M": (100, 2000, 0.3), "O": (100, 2000, 0.35)})
-    default = fairness.disparities(
-        fairness.audit(frame, THRESHOLD, attributes=("gender",))
-    )
+    default = fairness.disparities(fairness.audit(frame, THRESHOLD, attributes=("gender",)))
     assert default.iloc[0]["worst_group"] != "F"
 
     permissive = fairness.disparities(

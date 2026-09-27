@@ -1,0 +1,7 @@
+checkpoint_day,psi,band,reference_mean,current_mean,reference_alert_rate,current_alert_rate,alert_rate_change,reference_n,current_n,degenerate
+30,0.04891,stable,0.03768,0.03124,0.0961,0.0712,-0.0248,11763,7848,False
+60,0.01825,stable,0.03035,0.03033,0.0815,0.0691,-0.0124,11354,7545,False
+90,0.16513,minor,0.03477,0.03744,0.0988,0.0746,-0.0242,11052,7319,False
+120,0.0214,stable,0.03249,0.03093,0.0788,0.0674,-0.0114,10717,7112,False
+150,0.04211,stable,0.03166,0.02831,0.0879,0.0556,-0.0323,10433,6911,False
+180,0.13824,minor,0.01834,0.02298,0.0253,0.0303,0.005,10124,6672,False

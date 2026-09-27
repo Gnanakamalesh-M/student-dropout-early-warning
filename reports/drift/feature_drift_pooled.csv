@@ -1,0 +1,33 @@
+feature,checkpoint_day,psi,band,ks_statistic,ks_p_value,reference_mean,current_mean,reference_n,current_n,empty_bins,degenerate,degenerate_reason,missing_rate_change
+clicks_7d,,0.00203,stable,0.02085,0.0,42.1797,40.6451,65443,43407,0,False,,0.0
+clicks_14d,,0.00259,stable,0.03194,0.0,90.2255,86.3715,65443,43407,0,False,,0.0
+clicks_28d,,0.00552,stable,0.03887,0.0,189.3616,183.2069,65443,43407,0,False,,0.0
+clicks_56d,,0.02727,stable,0.04826,0.0,370.4322,360.2507,65443,43407,0,False,,0.0
+clicks_all_time,,0.02022,stable,0.04217,0.0,856.2784,830.4835,65443,43407,0,False,,0.0
+active_days_7d,,0.01243,stable,0.03033,0.0,2.0706,1.9809,65443,43407,0,False,,0.0
+active_days_14d,,0.02106,stable,0.03491,0.0,4.2399,4.034,65443,43407,0,False,,0.0
+active_days_28d,,0.02313,stable,0.03887,0.0,8.6929,8.31,65443,43407,0,False,,0.0
+active_days_56d,,0.03798,stable,0.04351,0.0,16.9301,16.3102,65443,43407,0,False,,0.0
+active_days_all_time,,0.0177,stable,0.02837,0.0,38.2809,37.0664,65443,43407,0,False,,0.0
+clicks_per_active_day_28d,,0.01254,stable,0.04576,0.0,16.034,17.4286,65443,43407,0,False,,0.0
+days_since_last_activity,,0.01457,stable,0.03392,0.0,12.7466,10.132,63913,42853,0,False,,-0.0106
+ever_active,,,degenerate,0.01062,0.005536,0.9766,0.9872,65443,43407,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,,0.01914,stable,0.0409,0.0,1.2993,1.0197,65443,43407,0,False,,0.0
+clicks_vs_baseline_ratio,,0.00721,stable,0.01814,0.0,1.5553,1.2654,65443,43407,0,False,,0.0
+clicks_ratio_4w,,0.03154,stable,0.04129,0.0,5.1635,6.1486,65443,43407,0,False,,0.0
+clicks_delta_4w,,0.02668,stable,0.03896,0.0,8.291,6.1632,65443,43407,0,False,,0.0
+assessments_due,,1.70961,major,0.18743,0.0,3.4937,2.5686,65443,43407,1,False,,0.0
+assessments_submitted,,0.19236,minor,0.12563,0.0,3.3599,2.6998,65443,43407,0,False,,0.0
+assessments_failed,,,degenerate,0.0611,0.0,0.0923,0.1428,65443,43407,0,True,reference constant or too zero-inflated to bin,0.0
+assessments_late,,0.11539,minor,0.11479,0.0,0.9565,0.5033,65443,43407,0,False,,0.0
+assessments_missed,,0.04892,stable,0.08127,0.0,0.5831,0.2741,65443,43407,0,False,,0.0
+submission_rate,,0.08377,stable,0.08281,0.0,1.0289,1.0695,62675,41056,0,False,,0.0119
+mean_score,,0.12417,minor,0.09477,0.0,75.5765,74.6399,58976,39878,0,False,,-0.0175
+min_score,,0.11027,minor,0.09367,0.0,65.8538,64.0492,58976,39878,0,False,,-0.0175
+mean_submission_lag,,0.12598,minor,0.107,0.0,-14.8943,-14.2724,58257,39873,0,False,,-0.0284
+days_since_last_submission,,0.18726,minor,0.10866,0.0,23.6143,24.608,59002,39879,0,False,,-0.0171
+has_submitted,,,degenerate,0.01714,0.0,0.9016,0.9187,65443,43407,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,,1e-05,stable,0.00138,1.0,102.4116,102.2393,65443,43407,0,False,,0.0
+num_of_prev_attempts,,0.065,stable,0.07383,0.0,0.1694,0.0776,65443,43407,0,False,,0.0
+studied_credits,,0.0218,stable,0.04668,0.0,78.5243,74.3177,65443,43407,0,False,,0.0
+date_registration,,0.03878,stable,0.07586,0.0,-67.2695,-63.6621,65415,43401,0,False,,-0.0003

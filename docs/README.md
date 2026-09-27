@@ -30,6 +30,7 @@ new ADR that supersedes the old one, rather than an edit.
 
 ## Written in later phases
 
-- `MONITORING.md` (Phase 11) — drift detection and the retraining policy
+- `MONITORING.md` — drift detection and the retraining policy, measured on the
+  real train/test cohort pair
 - `DEPLOYMENT.md` (Phase 13)
 - `FUTURE_WORK.md`

@@ -93,7 +93,17 @@ def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     audit_frame.to_csv(OUT_DIR / "subgroup_metrics.csv", index=False)
     display = audit_frame[
-        ["attribute", "value", "rows", "positives", "base_rate", "alert_rate", "recall", "false_negative_rate", "conclusive"]
+        [
+            "attribute",
+            "value",
+            "rows",
+            "positives",
+            "base_rate",
+            "alert_rate",
+            "recall",
+            "false_negative_rate",
+            "conclusive",
+        ]
     ]
     print(display.to_string(index=False))
 
@@ -199,7 +209,9 @@ def _write_report(
         "",
         "## Largest false-negative gaps",
         "",
-        fnr_gaps.to_markdown(index=False) if len(fnr_gaps) else "_No attribute had two assessable groups._",
+        fnr_gaps.to_markdown(index=False)
+        if len(fnr_gaps)
+        else "_No attribute had two assessable groups._",
         "",
     ]
 

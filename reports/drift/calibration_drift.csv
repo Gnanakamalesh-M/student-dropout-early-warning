@@ -1,0 +1,2 @@
+reference_observed,current_observed,reference_predicted,current_predicted,reference_gap,current_gap,gap_change,labels_complete
+0.02723,0.02903,0.03111,0.03034,0.00388,0.00131,-0.00257,True

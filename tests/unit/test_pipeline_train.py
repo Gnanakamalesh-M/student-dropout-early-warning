@@ -240,9 +240,7 @@ def test_threshold_is_chosen_on_validation_not_test(trained) -> None:
     # Refitting the same pipeline and scoring validation must reproduce the
     # stored threshold exactly; scoring test is not permitted to.
     validation = frame.loc[split.validation]
-    probabilities = trained.pipeline.predict_proba(
-        pipeline._feature_frame(validation)
-    )[:, 1]
+    probabilities = trained.pipeline.predict_proba(pipeline._feature_frame(validation))[:, 1]
     from dropout_ews.evaluation.metrics import threshold_for_recall
 
     expected = threshold_for_recall(

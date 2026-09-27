@@ -138,9 +138,7 @@ def group_metrics(
         false_positive_rate=fpr,
         fpr_ci=wilson_interval(false_positive, negatives),
         mean_predicted=float(y_prob.mean()) if rows else float("nan"),
-        calibration_gap=(
-            float(y_prob.mean()) - positives / rows if rows else float("nan")
-        ),
+        calibration_gap=(float(y_prob.mean()) - positives / rows if rows else float("nan")),
         conclusive=positives >= MIN_POSITIVES_FOR_RECALL and rows >= MIN_ROWS_FOR_GROUP,
     )
 
@@ -285,9 +283,7 @@ def disparities(
         # not crash on the case where nothing could be compared, which is the
         # most likely outcome on a small cohort.
         return pd.DataFrame(columns=list(_EMPTY_DISPARITY_COLUMNS))
-    return pd.DataFrame([item.to_row() for item in findings]).sort_values(
-        "gap", ascending=False
-    )
+    return pd.DataFrame([item.to_row() for item in findings]).sort_values("gap", ascending=False)
 
 
 def inconclusive_groups(audit_frame: pd.DataFrame) -> pd.DataFrame:
@@ -300,9 +296,7 @@ def inconclusive_groups(audit_frame: pd.DataFrame) -> pd.DataFrame:
     if rows.empty:
         return rows
     rows["reason"] = [
-        "too few positives"
-        if positives < MIN_POSITIVES_FOR_RECALL
-        else "too few rows"
+        "too few positives" if positives < MIN_POSITIVES_FOR_RECALL else "too few rows"
         for positives in rows["positives"]
     ]
     return rows[["attribute", "value", "rows", "positives", "reason"]]

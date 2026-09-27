@@ -1,0 +1,193 @@
+feature,checkpoint_day,psi,band,ks_statistic,ks_p_value,reference_mean,current_mean,reference_n,current_n,empty_bins,degenerate,degenerate_reason,missing_rate_change
+clicks_7d,30,0.0156,stable,0.05201,0.0,61.2141,54.0353,11763,7848,0,False,,0.0
+clicks_14d,30,0.01276,stable,0.04229,0.0,143.3783,129.765,11763,7848,0,False,,0.0
+clicks_28d,30,0.02223,stable,0.03881,1e-06,285.6478,271.3865,11763,7848,0,False,,0.0
+clicks_56d,30,0.0306,stable,0.04822,0.0,401.1668,387.7841,11763,7848,0,False,,0.0
+clicks_all_time,30,0.0306,stable,0.04822,0.0,401.1668,387.7841,11763,7848,0,False,,0.0
+active_days_7d,30,0.022,stable,0.05197,0.0,2.7504,2.5573,11763,7848,0,False,,0.0
+active_days_14d,30,0.02869,stable,0.05913,0.0,5.7877,5.4051,11763,7848,0,False,,0.0
+active_days_28d,30,0.03159,stable,0.05001,0.0,11.1926,10.6734,11763,7848,0,False,,0.0
+active_days_56d,30,0.02329,stable,0.03027,0.000351,16.1006,15.817,11763,7848,0,False,,0.0
+active_days_all_time,30,0.02329,stable,0.03027,0.000351,16.1006,15.817,11763,7848,0,False,,0.0
+clicks_per_active_day_28d,30,0.01247,stable,0.0364,7e-06,20.946,21.9629,11763,7848,0,False,,0.0
+days_since_last_activity,30,0.0026,stable,0.0138,0.343993,3.6526,3.4154,11354,7692,0,False,,-0.0149
+ever_active,30,,degenerate,0.01489,0.245001,0.9652,0.9801,11763,7848,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,30,0.01066,stable,0.02779,0.001365,0.5797,0.4246,11763,7848,0,False,,0.0
+clicks_vs_baseline_ratio,30,0.01096,stable,0.03738,4e-06,1.0865,1.0255,11763,7848,0,False,,0.0
+clicks_ratio_4w,30,0.01665,stable,0.03752,3e-06,16.7154,19.183,11763,7848,0,False,,0.0
+clicks_delta_4w,30,0.02202,stable,0.04245,0.0,170.1288,154.9888,11763,7848,0,False,,0.0
+assessments_due,30,0.01995,stable,0.09674,0.0,0.9395,0.7881,11763,7848,0,False,,0.0
+assessments_submitted,30,0.04367,stable,0.06893,0.0,0.9927,0.8851,11763,7848,0,False,,0.0
+assessments_failed,30,,degenerate,0.07461,0.0,0.0245,0.0979,11763,7848,0,True,reference constant or too zero-inflated to bin,0.0
+assessments_late,30,0.01442,stable,0.04398,0.0,0.1423,0.1827,11763,7848,0,False,,0.0
+assessments_missed,30,,degenerate,0.04059,0.0,0.1043,0.0538,11763,7848,0,True,reference constant or too zero-inflated to bin,0.0
+submission_rate,30,0.02525,stable,0.04374,1e-06,1.0619,1.085,9913,6185,0,False,,0.0546
+mean_score,30,0.39362,major,0.22464,0.0,74.6954,72.8223,9076,5997,0,False,,0.0074
+min_score,30,0.35196,major,0.22773,0.0,73.297,72.0565,9076,5997,0,False,,0.0074
+mean_submission_lag,30,0.15751,minor,0.13539,0.0,-13.2284,-12.5761,8908,5997,0,False,,-0.0069
+days_since_last_submission,30,0.71212,major,0.17605,0.0,10.5784,10.5602,9079,5998,0,False,,0.0076
+has_submitted,30,,degenerate,0.00756,0.949075,0.7718,0.7643,11763,7848,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,30,,degenerate,0.0,1.0,30.0,30.0,11763,7848,0,True,reference constant or too zero-inflated to bin,0.0
+num_of_prev_attempts,30,0.06533,stable,0.0746,0.0,0.1721,0.0793,11763,7848,0,False,,0.0
+studied_credits,30,0.02656,stable,0.05098,0.0,79.6829,75.3103,11763,7848,0,False,,0.0
+date_registration,30,0.03946,stable,0.07594,0.0,-67.6336,-63.9364,11758,7847,0,False,,-0.0003
+clicks_7d,60,0.00948,stable,0.03207,0.000175,37.5431,38.4851,11354,7545,0,False,,0.0
+clicks_14d,60,0.01207,stable,0.03885,2e-06,95.595,88.4871,11354,7545,0,False,,0.0
+clicks_28d,60,0.02058,stable,0.03524,2.5e-05,208.1898,185.8546,11354,7545,0,False,,0.0
+clicks_56d,60,0.03157,stable,0.04005,1e-06,493.6299,457.0573,11354,7545,0,False,,0.0
+clicks_all_time,60,0.03391,stable,0.04647,0.0,633.5868,599.0049,11354,7545,0,False,,0.0
+active_days_7d,60,0.01042,stable,0.03207,0.000175,2.139,2.1194,11354,7545,0,False,,0.0
+active_days_14d,60,0.02597,stable,0.04114,0.0,4.7799,4.515,11354,7545,0,False,,0.0
+active_days_28d,60,0.02493,stable,0.04299,0.0,9.8941,9.3271,11354,7545,0,False,,0.0
+active_days_56d,60,0.0389,stable,0.05382,0.0,21.1965,20.1822,11354,7545,0,False,,0.0
+active_days_all_time,60,0.02962,stable,0.03801,4e-06,26.9839,26.2261,11354,7545,0,False,,0.0
+clicks_per_active_day_28d,60,0.0272,stable,0.03902,2e-06,16.5677,16.2821,11354,7545,0,False,,0.0
+days_since_last_activity,60,0.00658,stable,0.0385,4e-06,6.4376,5.4625,11090,7446,0,False,,-0.0101
+ever_active,60,,degenerate,0.01013,0.736836,0.9767,0.9869,11354,7545,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,60,0.00578,stable,0.03207,0.000175,0.8498,0.662,11354,7545,0,False,,0.0
+clicks_vs_baseline_ratio,60,0.02578,stable,0.05965,0.0,1.7162,1.3772,11354,7545,0,False,,0.0
+clicks_ratio_4w,60,0.02411,stable,0.06091,0.0,1.6532,1.5217,11354,7545,0,False,,0.0
+clicks_delta_4w,60,0.01414,stable,0.04252,0.0,-77.2503,-85.348,11354,7545,0,False,,0.0
+assessments_due,60,5.07258,major,0.37969,0.0,2.2331,1.6941,11354,7545,1,False,,0.0
+assessments_submitted,60,0.51727,major,0.29357,0.0,2.2552,1.82,11354,7545,0,False,,0.0
+assessments_failed,60,,degenerate,0.06504,0.0,0.0517,0.1123,11354,7545,0,True,reference constant or too zero-inflated to bin,0.0
+assessments_late,60,0.26653,major,0.16573,0.0,0.5667,0.2649,11354,7545,0,False,,0.0
+assessments_missed,60,0.00988,stable,0.0539,0.0,0.2892,0.1617,11354,7545,0,False,,0.0
+submission_rate,60,0.04077,stable,0.04879,0.0,1.0148,1.0326,10436,6857,0,False,,0.0103
+mean_score,60,0.1535,minor,0.11313,0.0,75.9253,75.2036,10357,7019,0,False,,-0.0181
+min_score,60,0.13996,minor,0.11843,0.0,68.6499,67.0157,10357,7019,0,False,,-0.0181
+mean_submission_lag,60,0.11557,minor,0.13112,0.0,-14.1588,-13.0598,10203,7018,0,False,,-0.0315
+days_since_last_submission,60,0.89591,major,0.28017,0.0,11.8743,17.1993,10360,7019,0,False,,-0.0178
+has_submitted,60,,degenerate,0.01783,0.110635,0.9125,0.9303,11354,7545,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,60,,degenerate,0.0,1.0,60.0,60.0,11354,7545,0,True,reference constant or too zero-inflated to bin,0.0
+num_of_prev_attempts,60,0.06423,stable,0.07374,0.0,0.1702,0.0786,11354,7545,0,False,,0.0
+studied_credits,60,0.0246,stable,0.04907,0.0,79.0219,74.6634,11354,7545,0,False,,0.0
+date_registration,60,0.03999,stable,0.07652,0.0,-67.4598,-63.7348,11349,7544,0,False,,-0.0003
+clicks_7d,90,0.08398,stable,0.13965,0.0,40.3477,27.6617,11052,7319,0,False,,0.0
+clicks_14d,90,0.12451,minor,0.16858,0.0,66.6137,42.7583,11052,7319,0,False,,0.0
+clicks_28d,90,0.02346,stable,0.03271,0.000158,129.1536,109.7889,11052,7319,0,False,,0.0
+clicks_56d,90,0.02255,stable,0.03429,6.2e-05,332.6953,296.4404,11052,7319,0,False,,0.0
+clicks_all_time,90,0.03171,stable,0.04825,0.0,773.3649,725.9855,11052,7319,0,False,,0.0
+active_days_7d,90,0.08899,stable,0.12115,0.0,1.9863,1.4436,11052,7319,0,False,,0.0
+active_days_14d,90,0.13218,minor,0.14629,0.0,3.4582,2.3626,11052,7319,0,False,,0.0
+active_days_28d,90,0.0803,stable,0.09179,0.0,6.8971,5.7084,11052,7319,0,False,,0.0
+active_days_56d,90,0.0534,stable,0.0664,0.0,16.7145,15.1105,11052,7319,0,False,,0.0
+active_days_all_time,90,0.03335,stable,0.05061,0.0,34.5209,32.7878,11052,7319,0,False,,0.0
+clicks_per_active_day_28d,90,0.0485,stable,0.06117,0.0,13.435,15.1689,11052,7319,0,False,,0.0
+days_since_last_activity,90,0.09702,stable,0.11027,0.0,11.2032,11.5062,10811,7231,0,False,,-0.0098
+ever_active,90,,degenerate,0.00978,0.789516,0.9782,0.988,11052,7319,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,90,0.07898,stable,0.08129,0.0,1.3689,1.3669,11052,7319,0,False,,0.0
+clicks_vs_baseline_ratio,90,0.02897,stable,0.07332,0.0,1.1105,0.8758,11052,7319,0,False,,0.0
+clicks_ratio_4w,90,0.07253,stable,0.079,0.0,1.2907,1.9626,11052,7319,0,False,,0.0
+clicks_delta_4w,90,0.03246,stable,0.04531,0.0,-74.3881,-76.8625,11052,7319,0,False,,0.0
+assessments_due,90,2.98165,major,0.32069,0.0,3.0891,2.2253,11052,7319,1,False,,0.0
+assessments_submitted,90,0.40846,major,0.21691,0.0,2.8603,2.3246,11052,7319,0,False,,0.0
+assessments_failed,90,,degenerate,0.06377,0.0,0.0712,0.1265,11052,7319,0,True,reference constant or too zero-inflated to bin,0.0
+assessments_late,90,0.13973,minor,0.14841,0.0,0.6978,0.4563,11052,7319,0,False,,0.0
+assessments_missed,90,0.1837,minor,0.1636,0.0,0.565,0.1933,11052,7319,0,False,,0.0
+submission_rate,90,0.23844,minor,0.1636,0.0,0.9933,1.0698,11052,7319,1,False,,0.0
+mean_score,90,0.1427,minor,0.10253,0.0,75.7157,75.1618,10271,6987,0,False,,-0.0253
+min_score,90,0.1008,minor,0.09137,0.0,67.0038,65.0259,10271,6987,0,False,,-0.0253
+mean_submission_lag,90,0.15146,minor,0.10916,0.0,-15.6293,-15.1876,10137,6986,0,False,,-0.0373
+days_since_last_submission,90,1.00792,major,0.33817,0.0,24.7832,31.0942,10277,6987,0,False,,-0.0248
+has_submitted,90,,degenerate,0.02476,0.008887,0.9299,0.9546,11052,7319,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,90,,degenerate,0.0,1.0,90.0,90.0,11052,7319,0,True,reference constant or too zero-inflated to bin,0.0
+num_of_prev_attempts,90,0.06461,stable,0.07375,0.0,0.1695,0.078,11052,7319,0,False,,0.0
+studied_credits,90,0.02208,stable,0.04672,0.0,78.4745,74.241,11052,7319,0,False,,0.0
+date_registration,90,0.03845,stable,0.07518,0.0,-67.3079,-63.6274,11047,7318,0,False,,-0.0003
+clicks_7d,120,0.01137,stable,0.03666,2e-05,36.5424,39.0098,10717,7112,0,False,,0.0
+clicks_14d,120,0.038,stable,0.08482,0.0,69.6639,81.9393,10717,7112,0,False,,0.0
+clicks_28d,120,0.02503,stable,0.0586,0.0,148.5741,162.9717,10717,7112,0,False,,0.0
+clicks_56d,120,0.0142,stable,0.04034,2e-06,281.7716,276.0491,10717,7112,0,False,,0.0
+clicks_all_time,120,0.02808,stable,0.04746,0.0,936.406,909.3413,10717,7112,0,False,,0.0
+active_days_7d,120,0.0132,stable,0.03666,2e-05,1.9542,1.9519,10717,7112,0,False,,0.0
+active_days_14d,120,0.05064,stable,0.08729,0.0,3.8137,4.1727,10717,7112,0,False,,0.0
+active_days_28d,120,0.04097,stable,0.06153,0.0,7.9436,8.0741,10717,7112,0,False,,0.0
+active_days_56d,120,0.04823,stable,0.05631,0.0,14.9541,13.8591,10717,7112,0,False,,0.0
+active_days_all_time,120,0.0322,stable,0.04211,1e-06,43.1959,41.5748,10717,7112,0,False,,0.0
+clicks_per_active_day_28d,120,0.0349,stable,0.0659,0.0,13.3224,15.7769,10717,7112,0,False,,0.0
+days_since_last_activity,120,0.04489,stable,0.077,0.0,14.4478,11.145,10501,7033,0,False,,-0.009
+ever_active,120,,degenerate,0.00905,0.872072,0.9798,0.9889,10717,7112,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,120,0.03981,stable,0.08299,0.0,1.5016,1.0956,10717,7112,0,False,,0.0
+clicks_vs_baseline_ratio,120,0.02083,stable,0.04493,0.0,1.4569,1.3688,10717,7112,0,False,,0.0
+clicks_ratio_4w,120,0.12057,minor,0.15783,0.0,4.2513,6.6589,10717,7112,0,False,,0.0
+clicks_delta_4w,120,0.08273,stable,0.13035,0.0,15.3767,49.8944,10717,7112,0,False,,0.0
+assessments_due,120,5.07926,major,0.37986,0.0,3.7895,3.0045,10717,7112,1,False,,0.0
+assessments_submitted,120,0.56491,major,0.29334,0.0,3.7441,3.0906,10717,7112,0,False,,0.0
+assessments_failed,120,,degenerate,0.06058,0.0,0.1045,0.15,10717,7112,0,True,reference constant or too zero-inflated to bin,0.0
+assessments_late,120,0.25998,major,0.17495,0.0,1.1151,0.5485,10717,7112,0,False,,0.0
+assessments_missed,120,0.01411,stable,0.04986,0.0,0.5614,0.3397,10717,7112,0,False,,0.0
+submission_rate,120,0.4842,major,0.05752,0.0,1.0796,1.0791,10717,7112,1,False,,0.0
+mean_score,120,0.07902,stable,0.06589,0.0,76.0128,75.268,10015,6808,0,False,,-0.0228
+min_score,120,0.10804,minor,0.08869,0.0,64.7001,62.6143,10015,6808,0,False,,-0.0228
+mean_submission_lag,120,0.16285,minor,0.1496,0.0,-16.5727,-15.5719,9905,6807,0,False,,-0.0329
+days_since_last_submission,120,0.98663,major,0.28025,0.0,30.2143,27.4555,10020,6808,0,False,,-0.0223
+has_submitted,120,,degenerate,0.02229,0.028133,0.935,0.9573,10717,7112,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,120,,degenerate,0.0,1.0,120.0,120.0,10717,7112,0,True,reference constant or too zero-inflated to bin,0.0
+num_of_prev_attempts,120,0.06481,stable,0.07367,0.0,0.169,0.0773,10717,7112,0,False,,0.0
+studied_credits,120,0.02092,stable,0.04548,0.0,78.1618,73.8906,10717,7112,0,False,,0.0
+date_registration,120,0.03893,stable,0.07585,0.0,-67.1129,-63.532,10712,7111,0,False,,-0.0003
+clicks_7d,150,0.07098,stable,0.12156,0.0,45.7494,56.1378,10433,6911,0,False,,0.0
+clicks_14d,150,0.0873,stable,0.13685,0.0,92.0071,113.7858,10433,6911,0,False,,0.0
+clicks_28d,150,0.05114,stable,0.10002,0.0,192.4698,205.4078,10433,6911,0,False,,0.0
+clicks_56d,150,0.04041,stable,0.09159,0.0,344.2141,368.2607,10433,6911,0,False,,0.0
+clicks_all_time,150,0.02791,stable,0.05373,0.0,1149.429,1138.1592,10433,6911,0,False,,0.0
+active_days_7d,150,0.07526,stable,0.11492,0.0,1.9816,2.2937,10433,6911,0,False,,0.0
+active_days_14d,150,0.081,stable,0.11825,0.0,3.9971,4.4954,10433,6911,0,False,,0.0
+active_days_28d,150,0.04878,stable,0.07053,0.0,8.3956,8.5691,10433,6911,0,False,,0.0
+active_days_56d,150,0.04637,stable,0.06737,0.0,16.4585,16.7009,10433,6911,0,False,,0.0
+active_days_all_time,150,0.0312,stable,0.04073,2e-06,52.5092,51.166,10433,6911,0,False,,0.0
+clicks_per_active_day_28d,150,0.05511,stable,0.1056,0.0,15.8568,19.2129,10433,6911,0,False,,0.0
+days_since_last_activity,150,0.06131,stable,0.11138,0.0,18.645,12.5067,10230,6844,0,False,,-0.0098
+ever_active,150,,degenerate,0.00976,0.819272,0.9805,0.9903,10433,6911,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,150,0.06281,stable,0.11492,0.0,1.7096,1.1149,10433,6911,0,False,,0.0
+clicks_vs_baseline_ratio,150,0.02501,stable,0.06691,0.0,2.016,1.632,10433,6911,0,False,,0.0
+clicks_ratio_4w,150,0.04507,stable,0.06365,0.0,3.1557,4.2778,10433,6911,0,False,,0.0
+clicks_delta_4w,150,0.04887,stable,0.07204,0.0,40.7254,42.5548,10433,6911,0,False,,0.0
+assessments_due,150,5.24044,major,0.37985,0.0,5.0364,3.7351,10433,6911,1,False,,0.0
+assessments_submitted,150,0.70392,major,0.29664,0.0,4.7681,3.9049,10433,6911,0,False,,0.0
+assessments_failed,150,,degenerate,0.05847,0.0,0.1361,0.1829,10433,6911,0,True,reference constant or too zero-inflated to bin,0.0
+assessments_late,150,0.28066,major,0.17954,0.0,1.4691,0.7696,10433,6911,0,False,,0.0
+assessments_missed,150,0.08128,stable,0.0999,0.0,0.8814,0.4251,10433,6911,0,False,,0.0
+submission_rate,150,0.48506,major,0.0999,0.0,1.0173,1.0686,10433,6911,1,False,,0.0
+mean_score,150,0.05678,stable,0.05466,0.0,75.5591,74.5593,9773,6643,0,False,,-0.0245
+min_score,150,0.07936,stable,0.0889,0.0,61.9587,59.5726,9773,6643,0,False,,-0.0245
+mean_submission_lag,150,0.16385,minor,0.14419,0.0,-15.331,-14.5247,9691,6642,0,False,,-0.0322
+days_since_last_submission,150,1.14824,major,0.33263,0.0,32.5454,25.2107,9778,6643,0,False,,-0.024
+has_submitted,150,,degenerate,0.024,0.016355,0.9372,0.9612,10433,6911,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,150,,degenerate,0.0,1.0,150.0,150.0,10433,6911,0,True,reference constant or too zero-inflated to bin,0.0
+num_of_prev_attempts,150,0.06537,stable,0.07366,0.0,0.1683,0.0764,10433,6911,0,False,,0.0
+studied_credits,150,0.0193,stable,0.04394,0.0,77.886,73.8395,10433,6911,0,False,,0.0
+date_registration,150,0.03792,stable,0.07521,0.0,-67.0558,-63.5204,10429,6910,0,False,,-0.0002
+clicks_7d,180,0.00244,stable,0.01325,0.476199,29.5526,27.275,10124,6672,0,False,,0.0
+clicks_14d,180,0.02682,stable,0.03529,8.7e-05,68.1519,57.1076,10124,6672,0,False,,0.0
+clicks_28d,180,0.02284,stable,0.05256,0.0,162.0721,155.6021,10124,6672,0,False,,0.0
+clicks_56d,180,0.03017,stable,0.06896,0.0,358.6246,369.8467,10124,6672,0,False,,0.0
+clicks_all_time,180,0.02672,stable,0.04954,0.0,1338.4113,1324.8552,10124,6672,0,False,,0.0
+active_days_7d,180,0.00575,stable,0.01681,0.203615,1.5112,1.4424,10124,6672,0,False,,0.0
+active_days_14d,180,0.01846,stable,0.03952,7e-06,3.3906,3.0853,10124,6672,0,False,,0.0
+active_days_28d,180,0.00542,stable,0.04158,2e-06,7.5014,7.217,10124,6672,0,False,,0.0
+active_days_56d,180,0.04829,stable,0.06793,0.0,15.922,16.036,10124,6672,0,False,,0.0
+active_days_all_time,180,0.02843,stable,0.04376,0.0,60.9612,59.6033,10124,6672,0,False,,0.0
+clicks_per_active_day_28d,180,0.03358,stable,0.0607,0.0,15.6188,15.7827,10124,6672,0,False,,0.0
+days_since_last_activity,180,0.03443,stable,0.06253,0.0,23.9986,18.1719,9927,6607,0,False,,-0.0097
+ever_active,180,,degenerate,0.00972,0.838431,0.9805,0.9903,10124,6672,0,True,reference constant or too zero-inflated to bin,0.0
+inactive_weeks_streak,180,0.01274,stable,0.06983,0.0,1.9262,1.5637,10124,6672,0,False,,0.0
+clicks_vs_baseline_ratio,180,0.04445,stable,0.07099,0.0,2.0347,1.3588,10124,6672,0,False,,0.0
+clicks_ratio_4w,180,0.16203,minor,0.17049,0.0,2.9406,2.0347,10124,6672,0,False,,0.0
+clicks_delta_4w,180,0.13353,minor,0.16364,0.0,-34.4803,-58.6425,10124,6672,0,False,,0.0
+assessments_due,180,5.74132,major,0.49341,0.0,6.414,4.3555,10124,6672,1,False,,0.0
+assessments_submitted,180,0.79296,major,0.32368,0.0,6.0367,4.576,10124,6672,0,False,,0.0
+assessments_failed,180,0.01415,stable,0.04187,1e-06,0.1814,0.1986,10124,6672,0,False,,0.0
+assessments_late,180,0.76802,major,0.25059,0.0,1.926,0.8774,10124,6672,0,False,,0.0
+assessments_missed,180,0.14349,minor,0.12343,0.0,1.204,0.5225,10124,6672,0,False,,0.0
+submission_rate,180,0.67115,major,0.12343,0.0,1.0086,1.083,10124,6672,1,False,,0.0
+mean_score,180,0.04003,stable,0.04649,0.0,75.4451,74.5707,9484,6424,0,False,,-0.026
+min_score,180,0.08749,stable,0.08638,0.0,59.6637,58.4205,9484,6424,0,False,,-0.026
+mean_submission_lag,180,0.13621,minor,0.13513,0.0,-14.261,-14.5473,9413,6423,0,False,,-0.0329
+days_since_last_submission,180,1.13457,major,0.39402,0.0,31.4667,35.1236,9488,6424,0,False,,-0.0257
+has_submitted,180,,degenerate,0.02565,0.009882,0.9372,0.9628,10124,6672,0,True,reference constant or too zero-inflated to bin,0.0
+checkpoint_day,180,,degenerate,0.0,1.0,180.0,180.0,10124,6672,0,True,reference constant or too zero-inflated to bin,0.0
+num_of_prev_attempts,180,0.06584,stable,0.07351,0.0,0.1665,0.0755,10124,6672,0,False,,0.0
+studied_credits,180,0.02028,stable,0.04308,1e-06,77.7158,73.7942,10124,6672,0,False,,0.0
+date_registration,180,0.03946,stable,0.07646,0.0,-66.977,-63.5807,10120,6671,0,False,,-0.0002
