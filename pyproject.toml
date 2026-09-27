@@ -111,8 +111,12 @@ ignore = [
 "notebooks/*" = ["E402"]
 
 [tool.mypy]
+# `backend` is checked too. It was omitted originally, which is why a
+# Python 3.11-only import (enum.StrEnum) reached runtime instead of being
+# caught by the type checker on a 3.10 target.
 python_version = "3.10"
-packages = ["dropout_ews"]
+packages = ["dropout_ews", "backend"]
+mypy_path = "src"
 strict = false
 warn_return_any = true
 warn_unused_configs = true

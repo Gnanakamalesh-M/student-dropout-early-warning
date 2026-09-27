@@ -1,0 +1,2298 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Student Dropout Early-Warning API",
+    "description": "Estimates the probability that a student withdraws within 30 days of a checkpoint, with non-causal explanations and supportive intervention suggestions. Every risk figure is returned with the model version and a disclaimer. See docs/MODEL_CARD.md for limitations.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/token": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_token_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_api_v1_auth_token_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Me",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/students": {
+      "get": {
+        "tags": [
+          "students"
+        ],
+        "summary": "List Students",
+        "operationId": "list_students_api_v1_students_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "band",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Band"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "improving",
+                    "stable",
+                    "worsening",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Direction"
+            }
+          },
+          {
+            "name": "module",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Module"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_StudentSummary_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{student_code}": {
+      "get": {
+        "tags": [
+          "students"
+        ],
+        "summary": "Get Student",
+        "operationId": "get_student_api_v1_students__student_code__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProfile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{student_code}/risk-history": {
+      "get": {
+        "tags": [
+          "students"
+        ],
+        "summary": "Risk History",
+        "operationId": "risk_history_api_v1_students__student_code__risk_history_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrajectoryPoint"
+                  },
+                  "title": "Response Risk History Api V1 Students  Student Code  Risk History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{student_code}/explanation": {
+      "get": {
+        "tags": [
+          "students"
+        ],
+        "summary": "Get Explanation",
+        "operationId": "get_explanation_api_v1_students__student_code__explanation_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Code"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Checkpoint day; defaults to the latest.",
+              "title": "As Of"
+            },
+            "description": "Checkpoint day; defaults to the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplanationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{student_code}/recommendations": {
+      "get": {
+        "tags": [
+          "students"
+        ],
+        "summary": "Get Recommendations",
+        "operationId": "get_recommendations_api_v1_students__student_code__recommendations_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{student_code}/interventions": {
+      "get": {
+        "tags": [
+          "students"
+        ],
+        "summary": "List Interventions",
+        "operationId": "list_interventions_api_v1_students__student_code__interventions_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InterventionRecord"
+                  },
+                  "title": "Response List Interventions Api V1 Students  Student Code  Interventions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "students"
+        ],
+        "summary": "Assign Intervention",
+        "description": "Assign a recommended action. This is the human act ADR-0005 requires.",
+        "operationId": "assign_intervention_api_v1_students__student_code__interventions_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Student Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterventionAssignment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predict": {
+      "post": {
+        "tags": [
+          "prediction"
+        ],
+        "summary": "Predict",
+        "description": "Score a student on demand.\n\nTakes a student reference, never a raw feature vector: features must come from\nthe shared builder, or a caller could submit a vector no real student could\nproduce and the as-of guarantee would mean nothing.",
+        "operationId": "predict_api_v1_predict_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PredictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/dashboard/statistics": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Dashboard Statistics",
+        "operationId": "dashboard_statistics_api_v1_dashboard_statistics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatistics"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/analytics/risk-distribution": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Risk Distribution",
+        "operationId": "risk_distribution_api_v1_analytics_risk_distribution_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bins",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 5,
+              "default": 20,
+              "title": "Bins"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DistributionBin"
+                  },
+                  "title": "Response Risk Distribution Api V1 Analytics Risk Distribution Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/scatter": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Scatter",
+        "operationId": "scatter_api_v1_analytics_scatter_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "clicks_28d",
+              "title": "X"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScatterPoint"
+                  },
+                  "title": "Response Scatter Api V1 Analytics Scatter Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/feature-importance": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Feature Importance",
+        "operationId": "feature_importance_api_v1_analytics_feature_importance_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 60,
+              "minimum": 5,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeatureImportance"
+                  },
+                  "title": "Response Feature Importance Api V1 Analytics Feature Importance Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alerts": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "List Alerts",
+        "operationId": "list_alerts_api_v1_alerts_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "acknowledged",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Acknowledged"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertOut"
+                  },
+                  "title": "Response List Alerts Api V1 Alerts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alerts/{alert_id}/acknowledge": {
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Acknowledge Alert",
+        "operationId": "acknowledge_alert_api_v1_alerts__alert_id__acknowledge_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Alert Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/model/info": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Model Info",
+        "operationId": "model_info_api_v1_model_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/audit-log": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Read Audit Log",
+        "description": "Who looked at which student, and when (ETHICS.md). Admin only.",
+        "operationId": "read_audit_log_api_v1_admin_audit_log_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Read Audit Log Api V1 Admin Audit Log Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health",
+        "description": "Liveness and readiness, reported separately.\n\nUnauthenticated on purpose: a load balancer cannot hold a token.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Metrics",
+        "description": "Minimal operational counters.\n\nAuthenticated, because band counts over a cohort are still information about\nthat cohort.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Metrics Metrics Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlertOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "checkpoint_day": {
+            "type": "integer",
+            "title": "Checkpoint Day"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "band_escalated",
+              "rapid_increase",
+              "sustained_increase"
+            ],
+            "title": "Reason"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "high",
+              "critical"
+            ],
+            "title": "Severity"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          },
+          "previous_probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Probability"
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Band"
+          },
+          "acknowledged": {
+            "type": "boolean",
+            "title": "Acknowledged"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "student_code",
+          "checkpoint_day",
+          "reason",
+          "severity",
+          "probability",
+          "previous_probability",
+          "band",
+          "acknowledged",
+          "created_at"
+        ],
+        "title": "AlertOut"
+      },
+      "BandCount": {
+        "properties": {
+          "band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Band"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "share": {
+            "type": "number",
+            "title": "Share"
+          }
+        },
+        "type": "object",
+        "required": [
+          "band",
+          "label",
+          "count",
+          "share"
+        ],
+        "title": "BandCount"
+      },
+      "Body_login_api_v1_auth_token_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^password$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "title": "Password"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": ""
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_api_v1_auth_token_post"
+      },
+      "CurrentUser": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "may_view_individuals": {
+            "type": "boolean",
+            "title": "May View Individuals"
+          },
+          "may_assign_interventions": {
+            "type": "boolean",
+            "title": "May Assign Interventions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "role",
+          "may_view_individuals",
+          "may_assign_interventions"
+        ],
+        "title": "CurrentUser"
+      },
+      "DashboardStatistics": {
+        "properties": {
+          "total_students": {
+            "type": "integer",
+            "title": "Total Students"
+          },
+          "scored_checkpoints": {
+            "type": "integer",
+            "title": "Scored Checkpoints"
+          },
+          "band_counts": {
+            "items": {
+              "$ref": "#/components/schemas/BandCount"
+            },
+            "type": "array",
+            "title": "Band Counts"
+          },
+          "worsening_count": {
+            "type": "integer",
+            "title": "Worsening Count"
+          },
+          "open_alerts": {
+            "type": "integer",
+            "title": "Open Alerts"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "is_calibrated": {
+            "type": "boolean",
+            "title": "Is Calibrated"
+          },
+          "alert_budget": {
+            "type": "number",
+            "title": "Alert Budget"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_students",
+          "scored_checkpoints",
+          "band_counts",
+          "worsening_count",
+          "open_alerts",
+          "model_version",
+          "is_calibrated",
+          "alert_budget"
+        ],
+        "title": "DashboardStatistics"
+      },
+      "DistributionBin": {
+        "properties": {
+          "lower": {
+            "type": "number",
+            "title": "Lower"
+          },
+          "upper": {
+            "type": "number",
+            "title": "Upper"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lower",
+          "upper",
+          "count"
+        ],
+        "title": "DistributionBin"
+      },
+      "ExplanationResponse": {
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "checkpoint_day": {
+            "type": "integer",
+            "title": "Checkpoint Day"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskAssessment"
+          },
+          "risk_factors": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Risk Factors"
+          },
+          "protective_factors": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Protective Factors"
+          },
+          "context_factors": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Context Factors"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "default": "These are the factors the model weighted most heavily for this student. They describe the model's behaviour, not the causes of withdrawal, and they are not a judgement about this student. The risk figure is a probability, not a prediction of what will happen."
+          },
+          "attribution_basis": {
+            "type": "string",
+            "title": "Attribution Basis",
+            "default": "Attributions describe the model's pre-calibration score. They are reported as direction and relative impact, not as an effect on the probability."
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_code",
+          "checkpoint_day",
+          "risk",
+          "risk_factors",
+          "protective_factors",
+          "context_factors"
+        ],
+        "title": "ExplanationResponse"
+      },
+      "Factor": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "High",
+              "Medium",
+              "Low"
+            ],
+            "title": "Impact"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "increases",
+              "decreases"
+            ],
+            "title": "Direction"
+          },
+          "actionable": {
+            "type": "boolean",
+            "title": "Actionable"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "label",
+          "impact",
+          "direction",
+          "actionable",
+          "sentence"
+        ],
+        "title": "Factor"
+      },
+      "FeatureImportance": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "mean_abs_shap": {
+            "type": "number",
+            "title": "Mean Abs Shap"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "label",
+          "mean_abs_shap"
+        ],
+        "title": "FeatureImportance"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "model_loaded": {
+            "type": "boolean",
+            "title": "Model Loaded"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "data_loaded": {
+            "type": "boolean",
+            "title": "Data Loaded"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "model_loaded",
+          "model_version",
+          "data_loaded",
+          "environment"
+        ],
+        "title": "HealthResponse"
+      },
+      "InterventionAssignment": {
+        "properties": {
+          "intervention_key": {
+            "type": "string",
+            "title": "Intervention Key"
+          },
+          "assigned_to": {
+            "type": "string",
+            "title": "Assigned To"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intervention_key",
+          "assigned_to"
+        ],
+        "title": "InterventionAssignment",
+        "description": "A human assigning a recommended action to themselves or a colleague."
+      },
+      "InterventionRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "intervention_key": {
+            "type": "string",
+            "title": "Intervention Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "recommended",
+              "assigned",
+              "in_progress",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "assigned_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "assigned_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned By"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "student_code",
+          "intervention_key",
+          "title",
+          "status",
+          "assigned_to",
+          "assigned_by",
+          "note",
+          "created_at"
+        ],
+        "title": "InterventionRecord"
+      },
+      "Meta": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "Meta",
+        "description": "Pagination and provenance envelope."
+      },
+      "ModelInfo": {
+        "properties": {
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "model_type": {
+            "type": "string",
+            "title": "Model Type"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "git_commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Commit"
+          },
+          "n_features": {
+            "type": "integer",
+            "title": "N Features"
+          },
+          "imbalance_strategy": {
+            "type": "string",
+            "title": "Imbalance Strategy"
+          },
+          "calibration_method": {
+            "type": "string",
+            "title": "Calibration Method"
+          },
+          "train_presentations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Train Presentations"
+          },
+          "test_presentations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Test Presentations"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          },
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/RiskBandInfo"
+            },
+            "type": "array",
+            "title": "Bands"
+          },
+          "is_calibrated": {
+            "type": "boolean",
+            "title": "Is Calibrated"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_version",
+          "model_type",
+          "created_at",
+          "git_commit",
+          "n_features",
+          "imbalance_strategy",
+          "calibration_method",
+          "train_presentations",
+          "test_presentations",
+          "metrics",
+          "bands",
+          "is_calibrated",
+          "limitations"
+        ],
+        "title": "ModelInfo"
+      },
+      "Page_StudentSummary_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/StudentSummary"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Page[StudentSummary]"
+      },
+      "PredictRequest": {
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "checkpoint_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Day",
+            "description": "Defaults to the student's latest scored checkpoint."
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_code"
+        ],
+        "title": "PredictRequest",
+        "description": "Ad-hoc scoring for a student already in the system.\n\nDeliberately does not accept a raw feature vector. Features must be built by\nthe shared :class:`~dropout_ews.features.builder.FeatureBuilder` from event\ndata, or the caller could submit a vector that no real student could produce\nand the as-of guarantee would mean nothing."
+      },
+      "PredictResponse": {
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskAssessment"
+          },
+          "features_hash": {
+            "type": "string",
+            "title": "Features Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_code",
+          "risk",
+          "features_hash"
+        ],
+        "title": "PredictResponse"
+      },
+      "RecommendationOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "intensity": {
+            "type": "string",
+            "enum": [
+              "light",
+              "moderate"
+            ],
+            "title": "Intensity"
+          },
+          "owner_role": {
+            "type": "string",
+            "title": "Owner Role"
+          },
+          "typical_effort_minutes": {
+            "type": "integer",
+            "title": "Typical Effort Minutes"
+          },
+          "matched_factor": {
+            "type": "string",
+            "title": "Matched Factor"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "status": {
+            "type": "string",
+            "const": "recommended",
+            "title": "Status",
+            "default": "recommended"
+          },
+          "requires_human_review": {
+            "type": "boolean",
+            "const": true,
+            "title": "Requires Human Review",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "description",
+          "intensity",
+          "owner_role",
+          "typical_effort_minutes",
+          "matched_factor",
+          "rationale"
+        ],
+        "title": "RecommendationOut"
+      },
+      "RecommendationsResponse": {
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Band"
+          },
+          "band_guidance": {
+            "type": "string",
+            "title": "Band Guidance"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/RecommendationOut"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "case_note": {
+            "type": "string",
+            "title": "Case Note"
+          },
+          "case_note_source": {
+            "type": "string",
+            "enum": [
+              "llm",
+              "template"
+            ],
+            "title": "Case Note Source"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "default": "These are the factors the model weighted most heavily for this student. They describe the model's behaviour, not the causes of withdrawal, and they are not a judgement about this student. The risk figure is a probability, not a prediction of what will happen."
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_code",
+          "band",
+          "band_guidance",
+          "recommendations",
+          "case_note",
+          "case_note_source"
+        ],
+        "title": "RecommendationsResponse"
+      },
+      "RiskAssessment": {
+        "properties": {
+          "probability": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Probability"
+          },
+          "band": {
+            "$ref": "#/components/schemas/RiskBandInfo"
+          },
+          "checkpoint_day": {
+            "type": "integer",
+            "title": "Checkpoint Day"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "is_calibrated": {
+            "type": "boolean",
+            "title": "Is Calibrated"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "default": "These are the factors the model weighted most heavily for this student. They describe the model's behaviour, not the causes of withdrawal, and they are not a judgement about this student. The risk figure is a probability, not a prediction of what will happen."
+          }
+        },
+        "type": "object",
+        "required": [
+          "probability",
+          "band",
+          "checkpoint_day",
+          "model_version",
+          "is_calibrated"
+        ],
+        "title": "RiskAssessment",
+        "description": "A risk figure, and everything needed to read it responsibly.\n\n``disclaimer`` and ``model_version`` are required fields with no default that\ncan be omitted, so it is not possible to return a probability without them."
+      },
+      "RiskBandInfo": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "min_probability": {
+            "type": "number",
+            "title": "Min Probability"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "min_probability",
+          "color",
+          "action"
+        ],
+        "title": "RiskBandInfo"
+      },
+      "ScatterPoint": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "title": "Y"
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Band"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "band"
+        ],
+        "title": "ScatterPoint"
+      },
+      "StudentProfile": {
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "code_module": {
+            "type": "string",
+            "title": "Code Module"
+          },
+          "code_presentation": {
+            "type": "string",
+            "title": "Code Presentation"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskAssessment"
+          },
+          "risk_direction": {
+            "type": "string",
+            "enum": [
+              "improving",
+              "stable",
+              "worsening",
+              "unknown"
+            ],
+            "title": "Risk Direction"
+          },
+          "trajectory": {
+            "items": {
+              "$ref": "#/components/schemas/TrajectoryPoint"
+            },
+            "type": "array",
+            "title": "Trajectory"
+          },
+          "engagement": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Engagement"
+          },
+          "assessment": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Assessment"
+          },
+          "context": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_code",
+          "code_module",
+          "code_presentation",
+          "risk",
+          "risk_direction",
+          "trajectory",
+          "engagement",
+          "assessment",
+          "context"
+        ],
+        "title": "StudentProfile"
+      },
+      "StudentSummary": {
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "title": "Student Code"
+          },
+          "code_module": {
+            "type": "string",
+            "title": "Code Module"
+          },
+          "code_presentation": {
+            "type": "string",
+            "title": "Code Presentation"
+          },
+          "checkpoint_day": {
+            "type": "integer",
+            "title": "Checkpoint Day"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Band"
+          },
+          "risk_direction": {
+            "type": "string",
+            "enum": [
+              "improving",
+              "stable",
+              "worsening",
+              "unknown"
+            ],
+            "title": "Risk Direction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_code",
+          "code_module",
+          "code_presentation",
+          "checkpoint_day",
+          "probability",
+          "band",
+          "risk_direction"
+        ],
+        "title": "StudentSummary",
+        "description": "List-view row. No names: `student_code` is opaque."
+      },
+      "Token": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in_minutes": {
+            "type": "integer",
+            "title": "Expires In Minutes"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in_minutes",
+          "role"
+        ],
+        "title": "Token"
+      },
+      "TrajectoryPoint": {
+        "properties": {
+          "checkpoint_day": {
+            "type": "integer",
+            "title": "Checkpoint Day"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Band"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checkpoint_day",
+          "probability",
+          "band"
+        ],
+        "title": "TrajectoryPoint"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/api/v1/auth/token"
+          }
+        }
+      }
+    }
+  }
+}

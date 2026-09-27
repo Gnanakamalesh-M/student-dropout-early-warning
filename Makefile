@@ -69,6 +69,16 @@ model: ## Tune, calibrate and register the primary XGBoost model
 explain: ## Global importance, attribution stability, and worked examples
 	$(PYTHON) scripts/run_explainability.py
 
+api: ## Run the API locally with reload
+	$(BIN)/uvicorn backend.app.main:app --reload --port 8000
+
+openapi: ## Regenerate docs/openapi.json from the live app
+	$(PYTHON) -c "import json,pathlib; from backend.app.main import app; 		pathlib.Path('docs/openapi.json').write_text(json.dumps(app.openapi(), indent=2), encoding='utf-8')"
+	@echo "wrote docs/openapi.json"
+
+test-api: ## API tests only
+	$(PYTHON) -m pytest tests/api -q
+
 notebooks: ## Execute the EDA notebooks to check they still run
 	# Not part of CI: these need data/raw/oulad/, which is not committed.
 	# Run after `make data`.
