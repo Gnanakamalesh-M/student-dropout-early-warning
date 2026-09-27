@@ -108,4 +108,24 @@ jobs:
           TEST_DATABASE_URL: postgresql+psycopg://ews:ews@localhost:5432/ews_test
         run: pytest tests/integration/test_database.py -m integration -q
 
-  # Later phases will add a `frontend` job (vitest).
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      # The build is part of CI because a type error that only surfaces during
+      # bundling — or a Plotly trace missing from the basic distribution — would
+      # otherwise reach deployment.
+      - run: npm run build

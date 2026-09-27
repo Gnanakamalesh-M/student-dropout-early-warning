@@ -11,6 +11,7 @@
 | [MODEL_CARD.md](MODEL_CARD.md) | Performance, limitations, and why the primary model is not the most accurate one |
 | [API.md](API.md) | Endpoint reference, RBAC matrix, and a security bug the tests caught |
 | [DATABASE.md](DATABASE.md) | Schema, ER diagram, and why explanations are not stored |
+| [FRONTEND.md](FRONTEND.md) | Dashboard pages, UI decisions, and a 3.7x bundle-size fix |
 | [ETHICS.md](ETHICS.md) | Privacy, fairness, governance, and what this system must never be used for |
 
 ## Architecture decision records

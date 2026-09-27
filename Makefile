@@ -90,6 +90,15 @@ db: ## Migrate, seed, and score the cohort
 test-db: ## Database tests (SQLite by default; set TEST_DATABASE_URL for PostgreSQL)
 	$(PYTHON) -m pytest tests/integration -m integration -q
 
+frontend-install: ## Install frontend dependencies
+	cd frontend && npm ci
+
+frontend: ## Run the dashboard dev server (proxies /api to localhost:8000)
+	cd frontend && npm run dev
+
+frontend-check: ## Lint, typecheck, test and build the frontend
+	cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+
 notebooks: ## Execute the EDA notebooks to check they still run
 	# Not part of CI: these need data/raw/oulad/, which is not committed.
 	# Run after `make data`.
