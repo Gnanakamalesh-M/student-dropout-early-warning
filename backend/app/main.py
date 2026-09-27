@@ -11,9 +11,9 @@ what went wrong.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,6 +34,11 @@ from backend.app.security import (
     verify_password,
 )
 from dropout_ews.config.settings import get_settings
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from sqlalchemy.orm import Session
 
 state = RepositoryState()
 
@@ -57,7 +62,19 @@ def load_state() -> RepositoryState:
         model, metadata = load_model()
         fresh.metadata = metadata
         fresh.explainer = RiskExplainer(model, background=load_background())
-        fresh.repository = ParquetRepository(model, metadata.model_version)
+
+        settings = get_settings()
+        if settings.repository_backend == "database":
+            # Nothing is built here. A repository over a long-lived session would
+            # share one transaction across concurrent requests, and — as an
+            # integration test found — never commit, so a write returned HTTP 201
+            # and was silently lost. The repository is built per request instead;
+            # see `get_repository`.
+            fresh.repository = None
+            fresh.backend = "database"
+        else:
+            fresh.repository = ParquetRepository(model, metadata.model_version)
+            fresh.backend = "parquet"
     except Exception as exc:
         fresh.load_error = f"{type(exc).__name__}: {exc}"
     return fresh
@@ -71,16 +88,57 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     state.explainer = loaded.explainer
     state.metadata = loaded.metadata
     state.load_error = loaded.load_error
+    state.backend = loaded.backend
+    state.session_factory = loaded.session_factory
     yield
 
 
-def get_repository() -> ParquetRepository:
+def get_repository() -> Iterator[Any]:
+    """Yield a repository for this request.
+
+    For the database backend this opens a session, commits on success and rolls
+    back on failure. That is not boilerplate: the first version held one session
+    open for the process lifetime and never committed, so assigning an
+    intervention returned HTTP 201 and lost the row. A per-request transaction is
+    also the only correct choice under concurrency.
+    """
+    if state.load_error is not None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Model or data not loaded: {state.load_error}",
+        )
+
+    if state.backend == "database":
+        from backend.app.db.repository import SqlRepository
+        from backend.app.db.session import get_session_factory
+
+        version = getattr(state.metadata, "model_version", None)
+        if version is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Model not loaded"
+            )
+        factory = (
+            cast("Callable[[], Session]", state.session_factory)
+            if state.session_factory
+            else get_session_factory()
+        )
+        session = factory()
+        try:
+            yield SqlRepository(session, version)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+        return
+
     if state.repository is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Model or data not loaded: {state.load_error or 'unknown reason'}",
         )
-    return state.repository
+    yield state.repository
 
 
 def get_explainer() -> Any:
@@ -98,7 +156,9 @@ async def record_actor(request: Request, user: User = Depends(get_current_user))
     return user
 
 
-RepositoryDep = Annotated[ParquetRepository, Depends(get_repository)]
+# Typed as Any because either repository implementation may be behind it; the
+# Protocol in backend.app.repository is the contract.
+RepositoryDep = Annotated[Any, Depends(get_repository)]
 ExplainerDep = Annotated[Any, Depends(get_explainer)]
 
 # ---------------------------------------------------------------------------
@@ -436,13 +496,16 @@ async def health() -> schemas.HealthResponse:
 
     Unauthenticated on purpose: a load balancer cannot hold a token.
     """
-    loaded = state.repository is not None and state.explainer is not None
+    # With the database backend the repository is built per request, so its
+    # absence from state is expected and must not read as "not ready".
+    storage_ready = state.repository is not None or state.backend == "database"
+    loaded = storage_ready and state.explainer is not None and state.load_error is None
     version = getattr(state.metadata, "model_version", None)
     return schemas.HealthResponse(
         status="ok" if loaded else "degraded",
         model_loaded=loaded,
         model_version=version,
-        data_loaded=state.repository is not None,
+        data_loaded=storage_ready,
         environment=get_settings().environment,
     )
 
@@ -454,9 +517,11 @@ async def metrics(user: User = Depends(require_any_role)) -> dict[str, object]:
     Authenticated, because band counts over a cohort are still information about
     that cohort.
     """
-    repository = state.repository
+    repository = cast("Any", state.repository)
     if repository is None:
-        return {"model_loaded": False}
+        # The database backend builds its repository per request, so /metrics
+        # reports what it can rather than claiming the model is unloaded.
+        return {"model_loaded": state.backend == "database", "backend": state.backend}
     return {
         "model_loaded": True,
         "model_version": repository.model_version,

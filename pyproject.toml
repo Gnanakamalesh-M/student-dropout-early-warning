@@ -77,11 +77,34 @@ dev = [
 ews-data = "dropout_ews.pipeline.cli:data_app"
 ews-train = "dropout_ews.pipeline.cli:train_app"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+# Two package roots: the ML library lives under src/, the API package at the
+# repository root. Declared explicitly because setuptools' `find` directive takes
+# a single `where`, and scripts/ needs `backend` importable without a sys.path
+# hack — pytest happens to add the rootdir, but a plain `python scripts/x.py`
+# does not.
+[tool.setuptools]
+package-dir = { "dropout_ews" = "src/dropout_ews", "backend" = "backend" }
+packages = [
+    "dropout_ews",
+    "dropout_ews.config",
+    "dropout_ews.data",
+    "dropout_ews.eda",
+    "dropout_ews.evaluation",
+    "dropout_ews.explainability",
+    "dropout_ews.features",
+    "dropout_ews.interventions",
+    "dropout_ews.models",
+    "dropout_ews.monitoring",
+    "dropout_ews.pipeline",
+    "dropout_ews.preprocessing",
+    "backend",
+    "backend.app",
+    "backend.app.db",
+]
 
 [tool.setuptools.package-data]
 dropout_ews = ["config/*.yaml", "py.typed"]
+backend = ["app/**/*.yaml"]
 
 # ----------------------------------------------------------------------------
 # Tooling

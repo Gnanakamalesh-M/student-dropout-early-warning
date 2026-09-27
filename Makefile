@@ -79,6 +79,17 @@ openapi: ## Regenerate docs/openapi.json from the live app
 test-api: ## API tests only
 	$(PYTHON) -m pytest tests/api -q
 
+migrate: ## Apply database migrations
+	$(BIN)/alembic -c backend/alembic.ini upgrade head
+
+db: ## Migrate, seed, and score the cohort
+	$(MAKE) migrate
+	$(PYTHON) scripts/seed_db.py
+	$(PYTHON) scripts/score_cohort.py
+
+test-db: ## Database tests (SQLite by default; set TEST_DATABASE_URL for PostgreSQL)
+	$(PYTHON) -m pytest tests/integration -m integration -q
+
 notebooks: ## Execute the EDA notebooks to check they still run
 	# Not part of CI: these need data/raw/oulad/, which is not committed.
 	# Run after `make data`.

@@ -16,12 +16,7 @@ from typing import Any, cast
 import pandas as pd
 
 from backend.app import schemas
-from backend.app.repository import (
-    ASSESSMENT_FIELDS,
-    CONTEXT_FIELDS,
-    ENGAGEMENT_FIELDS,
-    ParquetRepository,
-)
+from backend.app.repository import ASSESSMENT_FIELDS, CONTEXT_FIELDS, ENGAGEMENT_FIELDS
 from dropout_ews.config.settings import load_threshold_config
 from dropout_ews.explainability.llm_summary import generate_case_note
 from dropout_ews.explainability.narratives import FEATURE_META, describe_feature, render_explanation
@@ -98,7 +93,7 @@ def student_summaries(rows: pd.DataFrame) -> list[schemas.StudentSummary]:
     ]
 
 
-def student_profile(repository: ParquetRepository, code: str) -> schemas.StudentProfile | None:
+def student_profile(repository: Any, code: str) -> schemas.StudentProfile | None:
     rows = repository.student_rows(code)
     if rows.empty:
         return None
@@ -143,7 +138,7 @@ def _factors(items: list[Any]) -> list[schemas.Factor]:
 
 
 def explanation(
-    repository: ParquetRepository,
+    repository: Any,
     explainer: Any,
     code: str,
     checkpoint_day: int | None = None,
@@ -173,7 +168,7 @@ def explanation(
 
 
 def recommendations(
-    repository: ParquetRepository, explainer: Any, code: str
+    repository: Any, explainer: Any, code: str
 ) -> schemas.RecommendationsResponse | None:
     features = repository.feature_row(code)
     if features.empty:
@@ -206,7 +201,7 @@ def features_hash(features: pd.DataFrame) -> str:
     return digest.hexdigest()[:32]
 
 
-def dashboard_statistics(repository: ParquetRepository) -> schemas.DashboardStatistics:
+def dashboard_statistics(repository: Any) -> schemas.DashboardStatistics:
     latest = repository.latest_rows()
     total = len(latest)
     counts = repository.band_counts()
@@ -230,9 +225,7 @@ def dashboard_statistics(repository: ParquetRepository) -> schemas.DashboardStat
     )
 
 
-def risk_distribution(
-    repository: ParquetRepository, bins: int = 20
-) -> list[schemas.DistributionBin]:
+def risk_distribution(repository: Any, bins: int = 20) -> list[schemas.DistributionBin]:
     probabilities = repository.latest_rows()["probability"]
     counts, edges = pd.cut(probabilities, bins=bins, retbins=True)
     histogram = counts.value_counts().sort_index()
@@ -246,9 +239,7 @@ def risk_distribution(
     ]
 
 
-def scatter(
-    repository: ParquetRepository, x_field: str, limit: int = 2000
-) -> list[schemas.ScatterPoint]:
+def scatter(repository: Any, x_field: str, limit: int = 2000) -> list[schemas.ScatterPoint]:
     """Scatter one feature against risk.
 
     Validated against an **allowlist**, not against column presence. Checking
@@ -275,7 +266,7 @@ def scatter(
 
 
 def feature_importance(
-    repository: ParquetRepository, explainer: Any, limit: int = 20
+    repository: Any, explainer: Any, limit: int = 20
 ) -> list[schemas.FeatureImportance]:
     sample = repository.latest_rows().head(1500)
     features = sample.drop(
@@ -306,7 +297,7 @@ def feature_importance(
     ]
 
 
-def model_info(repository: ParquetRepository, metadata: Any) -> schemas.ModelInfo:
+def model_info(repository: Any, metadata: Any) -> schemas.ModelInfo:
     config = load_threshold_config()
     return schemas.ModelInfo(
         model_version=metadata.model_version,

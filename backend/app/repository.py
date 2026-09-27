@@ -395,7 +395,17 @@ class ParquetRepository:
 class RepositoryState:
     """Application-wide singletons, populated at startup."""
 
-    repository: ParquetRepository | None = None
+    repository: object | None = None
+    """Either a ParquetRepository or a SqlRepository; both satisfy
+    :class:`StudentRepository`."""
+
+    backend: str = "parquet"
+    """Which repository implementation is in use."""
+
+    session_factory: object | None = None
+    """Overridable session factory, so tests can point the app at their own
+    engine without patching module globals."""
+
     explainer: object | None = None
     metadata: object | None = None
     load_error: str | None = None

@@ -70,6 +70,42 @@ jobs:
           ENVIRONMENT: ci
         run: pytest tests/ml -m ml -q
 
-  # Later phases will add:
-  #   - an `integration` job with a postgres service container
-  #   - a `frontend` job (vitest)
+  database:
+    # The local test suite runs against SQLite, which does not exercise JSONB,
+    # partial index predicates, server-side defaults, or PostgreSQL's stricter
+    # type coercion. This job closes that gap on the real engine.
+    name: Database (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ews
+          POSTGRES_PASSWORD: ews
+          POSTGRES_DB: ews_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev,api]"
+      - name: Migration round trip
+        env:
+          DATABASE_URL: postgresql+psycopg://ews:ews@localhost:5432/ews_test
+        run: |
+          alembic -c backend/alembic.ini upgrade head
+          alembic -c backend/alembic.ini downgrade base
+          alembic -c backend/alembic.ini upgrade head
+      - name: Schema and repository tests against PostgreSQL
+        env:
+          ENVIRONMENT: ci
+          TEST_DATABASE_URL: postgresql+psycopg://ews:ews@localhost:5432/ews_test
+        run: pytest tests/integration/test_database.py -m integration -q
+
+  # Later phases will add a `frontend` job (vitest).

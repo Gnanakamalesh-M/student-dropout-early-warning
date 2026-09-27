@@ -10,6 +10,7 @@
 | [FEATURE_DICTIONARY.md](FEATURE_DICTIONARY.md) | Every feature, and the ablation study that decided the allowlist |
 | [MODEL_CARD.md](MODEL_CARD.md) | Performance, limitations, and why the primary model is not the most accurate one |
 | [API.md](API.md) | Endpoint reference, RBAC matrix, and a security bug the tests caught |
+| [DATABASE.md](DATABASE.md) | Schema, ER diagram, and why explanations are not stored |
 | [ETHICS.md](ETHICS.md) | Privacy, fairness, governance, and what this system must never be used for |
 
 ## Architecture decision records
@@ -28,7 +29,6 @@ new ADR that supersedes the old one, rather than an edit.
 
 ## Written in later phases
 
-- `DATABASE.md` (Phase 9) — schema and ER diagram
 - `MONITORING.md` (Phase 11) — drift detection and the retraining policy
 - `DEPLOYMENT.md` (Phase 13)
 - `FUTURE_WORK.md`

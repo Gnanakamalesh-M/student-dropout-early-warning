@@ -266,6 +266,15 @@ class Settings(BaseSettings):
     secret_key: str = "dev-only-insecure-change-me"
     access_token_expire_minutes: int = 30
 
+    repository_backend: Literal["parquet", "database"] = "parquet"
+    """Which storage the API reads from.
+
+    ``parquet`` scores on demand from the processed feature file and needs no
+    database; ``database`` reads persisted predictions. Both satisfy the same
+    repository interface, so this is configuration rather than a code path —
+    which is the check on whether the Phase 8 seam was in the right place.
+    """
+
     model_dir: Path = MODELS_DIR
     active_model_version: str | None = None
 
