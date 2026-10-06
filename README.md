@@ -94,7 +94,13 @@ and a test asserts the word "reasons" never heads it.
 | Best single heuristic (inverse `clicks_28d`) | 0.048 | — | — |
 | Logistic regression | 0.072 | 0.209 | 0.731 |
 | Random forest | **0.095** | 0.063 | 0.742 |
-| XGBoost, tuned + isotonic (**shipped**) | 0.089 | — | 0.747 |
+| XGBoost, tuned + isotonic (**shipped**) | 0.089 | **0.027** | 0.747 |
+
+Brier is lower-is-better. Logistic regression's 0.209 is an artefact of
+`class_weight="balanced"`, which fits against an effectively 50/50 base rate: its
+mean predicted probability is 0.41 against a true 0.029, and dropping the weights
+gives Brier 0.028 at the same PR-AUC — the weighting distorts the probabilities,
+not the ranking.
 
 The random forest scores higher. XGBoost ships because it calibrates better and
 explains faster, and that tradeoff is documented rather than hidden behind a
