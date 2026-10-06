@@ -201,7 +201,27 @@ exercised. What SQLite does **not** verify:
   could pass locally and fail in production.
 
 Set `TEST_DATABASE_URL` to a PostgreSQL DSN to rerun everything against the real
-engine, which is what the CI service container does.
+engine, which is what the CI service container does:
+
+```bash
+docker run -d --name ews-pg -e POSTGRES_USER=ews -e POSTGRES_PASSWORD=ews   -e POSTGRES_DB=ews_test -p 5432:5432 postgres:16
+TEST_DATABASE_URL=postgresql+psycopg://ews:ews@localhost:5432/ews_test   pytest tests/integration -m integration
+```
+
+Measured counts, so the numbers are attributable: `tests/integration` holds **65**
+tests — `test_database.py` 41, `test_api_over_database.py` 12,
+`test_oulad_real_data.py` 12. On SQLite, **64 pass and 1 skips**, and that skip
+names itself rather than passing quietly:
+
+```
+SKIPPED tests/integration/test_database.py:681: running against SQLite;
+set TEST_DATABASE_URL to a PostgreSQL DSN to verify JSONB, partial indexes
+and server-side defaults
+```
+
+The zero-skip run is verified **only by CI's `database` job** — the command above
+is transcribed from that job's configuration, not from a local run, because
+neither Docker nor PostgreSQL is available here.
 
 ### A SQLite gap that mattered
 

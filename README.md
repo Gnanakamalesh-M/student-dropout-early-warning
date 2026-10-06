@@ -32,7 +32,7 @@ be right about individuals, and nothing in the interface claims it is.
 | Splits | chronological by presentation, grouped by student: 65,443 / 32,076 / 43,407 |
 | API | FastAPI, 19 paths / 20 operations, RBAC + audit logging |
 | Dashboard | React 18 + TypeScript, 7 pages |
-| Tests | 535 passing, 1 skipped, 91% coverage on `src/` and `backend/` |
+| Tests | 536 total — see [Checks](#checks) for the two selections and their measured numbers |
 
 Documentation is in [`docs/`](docs/README.md) — task spec, data card, EDA
 findings, feature dictionary, model card, ethics, fairness audit, monitoring,
@@ -188,11 +188,53 @@ docker compose up --build
 ### Checks
 
 ```bash
-ruff check . && ruff format --check . && mypy
-pytest -m "not integration" --cov
-pytest tests/ml -m ml                    # the leakage guarantees, on their own
-cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+ruff check . && ruff format --check . && mypy        # all clean
+pytest --cov                                          # 535 passed, 1 skipped, 91%
+pytest -m "not integration" --cov                     # 471 passed, 65 deselected, 87%
+pytest tests/ml -m ml                                 # 85 — the leakage guarantees alone
+cd frontend && npm run lint && npm run typecheck && npm test && npm run build   # 37 tests
 ```
+
+Both pytest numbers above were measured on this machine and both are correct —
+they select different sets, so **quote the command with the number**. 536 tests
+are collected in total:
+
+| Selection | Result | Coverage |
+|---|---|---:|
+| `pytest --cov` | 535 passed, 1 skipped | 91% |
+| `pytest -m "not integration" --cov` (what CI runs) | 471 passed, 65 deselected | 87% |
+
+`tests/unit` 294 · `tests/ml` 85 · `tests/api` 92 · `tests/integration` 65.
+
+### The integration tests, and the one skip
+
+The 65 `integration`-marked tests are in `tests/integration/`:
+`test_database.py` (41), `test_api_over_database.py` (12),
+`test_oulad_real_data.py` (12). They cover the SQLAlchemy schema, cascades and
+constraints; the API driven over the database backend rather than Parquet; and
+assertions against the real OULAD extract.
+
+**64 of the 65 run with no database server** — they use SQLite, so plain `pytest`
+runs them and they are included in the 535. Only **one** genuinely needs
+PostgreSQL, and it reports itself rather than passing quietly:
+
+```
+SKIPPED tests/integration/test_database.py:681: running against SQLite;
+set TEST_DATABASE_URL to a PostgreSQL DSN to verify JSONB, partial indexes
+and server-side defaults
+```
+
+To run that one, point at a real PostgreSQL:
+
+```bash
+docker run -d --name ews-pg -e POSTGRES_USER=ews -e POSTGRES_PASSWORD=ews   -e POSTGRES_DB=ews_test -p 5432:5432 postgres:16
+TEST_DATABASE_URL=postgresql+psycopg://ews:ews@localhost:5432/ews_test   pytest tests/integration -m integration
+```
+
+I have not run that myself — Docker and PostgreSQL are both unavailable on this
+machine, so **the zero-skip result is verified only by CI's `database` job**,
+which also round-trips the migrations. The command above is written from that
+job's configuration, not from a local run.
 
 ---
 
