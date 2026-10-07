@@ -34,6 +34,12 @@ services:
       retries: 10
 
   api:
+    # Explicit image name so the tag is stable rather than derived from the
+    # directory name. CI builds this exact tag with buildx (for layer caching),
+    # runs its image assertions against it, then brings the stack up with
+    # --no-build -- so the image that is asserted on is the image that runs.
+    # Without this they were two different builds.
+    image: ews-api:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: Dockerfile
@@ -66,6 +72,7 @@ services:
         condition: service_healthy
 
   dashboard:
+    image: ews-dashboard:${IMAGE_TAG:-local}
     build:
       context: ./frontend
       dockerfile: Dockerfile

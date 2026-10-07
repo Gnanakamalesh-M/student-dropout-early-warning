@@ -303,30 +303,63 @@ def test_shipped_config_enforces_human_review() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_local_defaults_load() -> None:
+# Every field below is also readable from the process environment, so a test that
+# asserts a *default* has to clear the environment as well as disable .env.
+# `_env_file=None` only does the latter. CI sets ENVIRONMENT=ci, which made
+# test_local_defaults_load fail with "assert 'ci' == 'local'" -- the test had
+# always been environment-dependent and nothing had exposed it, because locally
+# the variable is unset and .env happens to say "local" anyway.
+SETTINGS_ENV_VARS = (
+    "ENVIRONMENT",
+    "LOG_LEVEL",
+    "DATABASE_URL",
+    "SECRET_KEY",
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "CORS_ORIGINS",
+    "FORCE_HTTPS",
+    "REPOSITORY_BACKEND",
+    "MODEL_DIR",
+    "ACTIVE_MODEL_VERSION",
+    "ENABLE_LLM_NARRATIVE",
+    "ANTHROPIC_API_KEY",
+)
+
+
+@pytest.fixture
+def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove every settings override so a default actually reads as a default."""
+    for name in SETTINGS_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_local_defaults_load(clean_env: None) -> None:
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
     assert settings.environment == "local"
     assert settings.enable_llm_narrative is False
 
 
-def test_production_rejects_the_default_secret_key() -> None:
+def test_production_rejects_the_default_secret_key(clean_env: None) -> None:
     with pytest.raises(ValidationError, match="secret_key must be set"):
         Settings(_env_file=None, environment="production")  # type: ignore[call-arg]
 
 
-def test_production_rejects_a_short_secret_key() -> None:
+def test_production_rejects_a_short_secret_key(clean_env: None) -> None:
     with pytest.raises(ValidationError, match="at least 32 characters"):
         Settings(_env_file=None, environment="production", secret_key="short")  # type: ignore[call-arg]
 
 
-def test_llm_flag_requires_an_api_key() -> None:
+def test_llm_flag_requires_an_api_key(clean_env: None) -> None:
     """Fail at startup rather than at the first request, and point the operator
-    at the working fallback."""
+    at the working fallback.
+
+    Needs `clean_env`: an ANTHROPIC_API_KEY in the environment would satisfy the
+    validator and the expected error would never be raised.
+    """
     with pytest.raises(ValidationError, match="deterministic narrative templates"):
         Settings(_env_file=None, enable_llm_narrative=True)  # type: ignore[call-arg]
 
 
-def test_llm_flag_accepted_when_key_present() -> None:
+def test_llm_flag_accepted_when_key_present(clean_env: None) -> None:
     settings = Settings(  # type: ignore[call-arg]
         _env_file=None, enable_llm_narrative=True, anthropic_api_key="test-key"
     )

@@ -101,19 +101,40 @@ def test_cors_origins_come_from_settings_not_a_literal() -> None:
     assert "localhost:5173" not in source
 
 
-def test_local_defaults_keep_the_dev_server_working() -> None:
-    settings = Settings()
+@pytest.fixture
+def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clear settings overrides so default assertions read as defaults.
+
+    `Settings()` reads both `.env` and the process environment. CI has no `.env`
+    but does set ENVIRONMENT=ci, and a developer may have any of these exported --
+    either way an assertion about a default is otherwise testing the ambient
+    machine rather than the code.
+    """
+    for name in (
+        "ENVIRONMENT",
+        "SECRET_KEY",
+        "CORS_ORIGINS",
+        "FORCE_HTTPS",
+        "ENABLE_LLM_NARRATIVE",
+        "ANTHROPIC_API_KEY",
+        "REPOSITORY_BACKEND",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_local_defaults_keep_the_dev_server_working(clean_env: None) -> None:
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
     assert "http://localhost:5173" in settings.cors_origins
 
 
-def test_wildcard_origin_is_refused_at_startup() -> None:
+def test_wildcard_origin_is_refused_at_startup(clean_env: None) -> None:
     """Browsers reject wildcard-with-credentials at runtime, so this would fail on
     the first real request instead of at boot. Boot is the better place."""
     with pytest.raises(ValidationError, match=r"must not contain"):
         Settings(cors_origins=["*"])
 
 
-def test_production_refuses_leftover_development_origins() -> None:
+def test_production_refuses_leftover_development_origins(clean_env: None) -> None:
     """The realistic mistake: deploying with the defaults still in place. The API
     would then accept credentialed requests from anything running on the
     operator's own machine."""
@@ -125,18 +146,18 @@ def test_production_refuses_leftover_development_origins() -> None:
         )
 
 
-def test_production_refuses_plain_http_origins() -> None:
+def test_production_refuses_plain_http_origins(clean_env: None) -> None:
     with pytest.raises(ValidationError, match="must use https"):
         Settings(environment="production", secret_key="x" * 32, cors_origins=["http://app.edu"])
 
 
-def test_production_refuses_an_empty_origin_list() -> None:
+def test_production_refuses_an_empty_origin_list(clean_env: None) -> None:
     """An empty list is not "allow nothing", it is "nobody configured this"."""
     with pytest.raises(ValidationError, match="must be set"):
         Settings(environment="production", secret_key="x" * 32, cors_origins=[])
 
 
-def test_production_accepts_a_real_https_origin() -> None:
+def test_production_accepts_a_real_https_origin(clean_env: None) -> None:
     settings = Settings(
         environment="production",
         secret_key="x" * 32,
@@ -150,12 +171,12 @@ def test_production_accepts_a_real_https_origin() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_production_refuses_the_development_secret() -> None:
+def test_production_refuses_the_development_secret(clean_env: None) -> None:
     with pytest.raises(ValidationError, match="secret_key"):
         Settings(environment="production")
 
 
-def test_production_refuses_a_short_secret() -> None:
+def test_production_refuses_a_short_secret(clean_env: None) -> None:
     with pytest.raises(ValidationError, match="32 characters"):
         Settings(
             environment="production",
@@ -177,7 +198,7 @@ def test_demo_users_exist_only_in_local_environment() -> None:
     assert "demo_users" in source
 
 
-def test_llm_flag_cannot_be_enabled_without_a_key() -> None:
+def test_llm_flag_cannot_be_enabled_without_a_key(clean_env: None) -> None:
     """ADR-0005: the feature is optional. Enabling it with no key would fail on
     the first case-note request rather than at startup."""
     with pytest.raises(ValidationError, match="anthropic_api_key"):

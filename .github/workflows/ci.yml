@@ -40,7 +40,14 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: pyproject.toml
-      - run: pip install -e ".[dev]"
+      # ".[dev,api]", not ".[dev]": tests/api and tests/integration import
+      # `backend.app`, which needs fastapi, sqlalchemy and alembic -- all in the
+      # `api` extra. `-m "not integration"` deselects by marker, but pytest must
+      # still IMPORT each module to read its markers, so a missing dependency is a
+      # collection error. Collection errors interrupt the run with exit code 2
+      # before any test executes and before coverage.xml is written, which is
+      # exactly how this job was failing.
+      - run: pip install -e ".[dev,api]"
       - name: Run tests
         env:
           ENVIRONMENT: ci
@@ -144,6 +151,19 @@ jobs:
     # committed.
     name: Container build & stack smoke test
     runs-on: ubuntu-latest
+    # Job-level, not step-level. docker-compose.yml declares SECRET_KEY with the
+    # required-variable form `${SECRET_KEY:?...}`, so *every* command that parses
+    # the file needs it -- including `logs` and `down`. With it set only on the
+    # boot and migration steps, `docker compose down -v` (if: always()) exited 1
+    # and failed the job even when every check had passed, and the "Dump logs on
+    # failure" step failed the same way, destroying the diagnostics for any real
+    # failure. Reproduced locally: with no .env and SECRET_KEY unset, `down`,
+    # `logs` and `ps` all exit 1 with "required variable SECRET_KEY is missing".
+    # The required-variable guard itself is deliberate and stays.
+    env:
+      SECRET_KEY: ci-only-secret-key-at-least-32-characters-long
+      ENVIRONMENT: local
+      REPOSITORY_BACKEND: database
     steps:
       - uses: actions/checkout@v4
 
@@ -154,7 +174,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: ews-api:ci
+          tags: ews-api:local
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -163,13 +183,13 @@ jobs:
         with:
           context: ./frontend
           load: true
-          tags: ews-dashboard:ci
+          tags: ews-dashboard:local
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: The API image must not run as root
         run: |
-          user=$(docker run --rm ews-api:ci id -un)
+          user=$(docker run --rm ews-api:local id -un)
           echo "container user: $user"
           test "$user" = "ews"
 
@@ -179,7 +199,7 @@ jobs:
         # like a missing Python package and is not one. This is the check that
         # the two-stage build did not drop it.
         run: |
-          docker run --rm ews-api:ci python -c "
+          docker run --rm ews-api:local python -c "
           import xgboost, shap, sklearn, fastapi
           print('xgboost', xgboost.__version__)
           print('shap', shap.__version__)
@@ -190,26 +210,23 @@ jobs:
         # leaks into the runtime stage the image is much larger and ships a
         # compiler next to student records.
         run: |
-          if docker run --rm ews-api:ci sh -c "command -v gcc"; then
+          if docker run --rm ews-api:local sh -c "command -v gcc"; then
             echo "::error::gcc present in the runtime image; the build stage leaked"
             exit 1
           fi
           echo "no compiler in runtime image"
 
       - name: Boot the stack
-        env:
-          SECRET_KEY: ci-only-secret-key-at-least-32-characters-long
-          ENVIRONMENT: local
-          REPOSITORY_BACKEND: database
         run: |
           mkdir -p models data/processed
+          # --no-build: the images were built above and tagged with the names
+          # compose declares, so this starts those exact images instead of
+          # building a second, unasserted copy.
           docker compose up -d --no-build db
-          docker compose up -d api dashboard
+          docker compose up -d --no-build api dashboard
           docker compose ps
 
       - name: Migrations must apply against real PostgreSQL
-        env:
-          SECRET_KEY: ci-only-secret-key-at-least-32-characters-long
         run: |
           docker compose exec -T api alembic -c backend/alembic.ini upgrade head
           docker compose exec -T api alembic -c backend/alembic.ini downgrade base
