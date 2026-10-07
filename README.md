@@ -1,5 +1,7 @@
 # Student Dropout Early-Warning & Intervention System
 
+[![CI](https://github.com/Gnanakamalesh-M/student-dropout-early-warning/actions/workflows/ci.yml/badge.svg)](https://github.com/Gnanakamalesh-M/student-dropout-early-warning/actions/workflows/ci.yml)
+
 Estimates, at six fixed checkpoints through a university course, the probability
 that a student withdraws within the next 30 days — with the factors that drove
 each estimate and the support actions they suggest.
