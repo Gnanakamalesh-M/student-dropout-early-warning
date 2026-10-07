@@ -1,10 +1,10 @@
 # Local full-stack run: PostgreSQL, the API, the dashboard.
 #
-# NOT RUN BY ITS AUTHOR. Docker is unavailable on the development machine, so
-# this file is exercised only by the `containers` job in .github/workflows/ci.yml,
-# which builds both images, boots this stack, applies migrations and checks that
-# /health reports ready. Until that job has passed, treat this as reviewed code
-# that has never executed.
+# Run locally (Docker 29.8.2, Compose v5.5.1) with all three services reaching
+# `healthy`, and also exercised by the `containers` job in
+# .github/workflows/ci.yml. The local run is the stronger check: CI has no model
+# or data, so it expects /health to report `degraded` and cannot distinguish that
+# from a path bug. See docs/DEPLOYMENT.md.
 #
 #   cp .env.example .env     # then set SECRET_KEY
 #   docker compose up --build
@@ -39,6 +39,7 @@ services:
       dockerfile: Dockerfile
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-local}
+      DROPOUT_EWS_ROOT: /app
       # +asyncpg is rewritten to +psycopg by sync_database_url(); the URL is
       # written this way for forward compatibility, see backend/app/db/session.py.
       DATABASE_URL: postgresql+asyncpg://ews:${POSTGRES_PASSWORD:-ews}@db:5432/ews
@@ -51,7 +52,13 @@ services:
     # whose redistribution terms are the dataset's and not ours to assume.
     volumes:
       - ./models:/app/models:ro
-      - ./data/processed:/app/data/processed:ro
+      # The whole data/ tree, not just processed/: the `parquet` backend reads
+      # student and module metadata straight from the raw OULAD CSVs, so mounting
+      # only data/processed left the API healthy with `data_loaded: false` and a
+      # swallowed FileNotFoundError for data/raw/oulad/studentRegistration.csv.
+      # Still a read-only mount rather than an image layer -- the OULAD licence
+      # is the dataset's, so it must not travel inside a distributable image.
+      - ./data:/app/data:ro
     ports:
       - "8000:8000"
     depends_on:

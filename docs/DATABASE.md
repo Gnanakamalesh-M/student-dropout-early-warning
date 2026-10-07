@@ -219,9 +219,13 @@ set TEST_DATABASE_URL to a PostgreSQL DSN to verify JSONB, partial indexes
 and server-side defaults
 ```
 
-The zero-skip run is verified **only by CI's `database` job** — the command above
-is transcribed from that job's configuration, not from a local run, because
-neither Docker nor PostgreSQL is available here.
+Measured locally against `postgres:16-alpine`: **65 passed, 0 skipped** — the one
+SQLite skip disappears, so JSONB behaviour, the partial-index predicate,
+server-side defaults and PostgreSQL's stricter type coercion are all actually
+checked. The migration round trip applies cleanly too, and PostgreSQL reports
+transactional DDL where SQLite reports non-transactional, which means the
+downgrade path is exercised rather than assumed. CI's `database` job runs the
+same thing.
 
 ### A SQLite gap that mattered
 

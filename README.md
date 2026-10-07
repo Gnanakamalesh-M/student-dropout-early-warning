@@ -177,9 +177,9 @@ uvicorn backend.app.main:app --reload --port 8000
 cd frontend && npm ci && npm run dev     # :5173
 ```
 
-Or with containers — but read
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) first, because those images are
-verified only in CI:
+Or with containers. Built and run locally (Docker 29.8.2, Compose v5.5.1) with
+all three services healthy and real scoring requests served from the container;
+`models/` and `data/` are mounted read-only, so build them first:
 
 ```bash
 docker compose up --build
@@ -231,10 +231,11 @@ docker run -d --name ews-pg -e POSTGRES_USER=ews -e POSTGRES_PASSWORD=ews   -e P
 TEST_DATABASE_URL=postgresql+psycopg://ews:ews@localhost:5432/ews_test   pytest tests/integration -m integration
 ```
 
-I have not run that myself — Docker and PostgreSQL are both unavailable on this
-machine, so **the zero-skip result is verified only by CI's `database` job**,
-which also round-trips the migrations. The command above is written from that
-job's configuration, not from a local run.
+Measured locally against `postgres:16-alpine` on port 55432: **65 passed, 0
+skipped**, and the migration round trip (`upgrade → downgrade → upgrade`) applies
+cleanly — PostgreSQL reports transactional DDL where SQLite reports
+non-transactional, so the rollback path is genuinely exercised. CI's `database`
+job runs the same thing.
 
 ---
 
@@ -272,9 +273,11 @@ disclaimer list.
 6. **Synthetic data is labelled as such, everywhere.** A synthetic cohort exists
    for demo purposes; `docs/DATA_CARD.md` states its generating DAG and the
    circularity that makes performance on it meaningless.
-7. **Container images have never been run by their author** — Docker is not
-   installed on the development machine. CI builds and boots them; that is the
-   only verification. `docs/DEPLOYMENT.md` has the full verified-where table.
+7. **The container stack is verified locally and in CI**, including a real
+   SHAP-explained scoring request inside the container. Building it for the first
+   time found four bugs that all produced a *healthy-looking* failure — see
+   `docs/DEPLOYMENT.md`. CI still runs without a trained model, so its green
+   badge proves wiring, not scoring.
 8. **No Kubernetes manifests, TLS termination, rate limits, or retention
    policy.** Each would be guesswork here, and guesswork presented as deployment
    config is worse than its absence.

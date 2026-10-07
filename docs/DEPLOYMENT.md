@@ -1,43 +1,152 @@
 # Deployment
 
-## What is verified, and by whom
+## What is verified, and how
 
-This section is first because it is the most important thing on the page.
+Docker Desktop is now installed on the development machine, so the container
+work has been **built and run locally**, end to end. This section previously said
+the opposite; it was accurate when written and is superseded.
 
-Docker is **not installed** on the machine this project was built on. The
-`Dockerfile`s, `nginx.conf` and `docker-compose.yml` have therefore never been
-built or run by their author. They are reviewed code that has not executed.
+Versions used: Docker 29.8.2, Compose v5.5.1, linux/x86_64 engine.
 
-What verifies them is the `containers` job in `.github/workflows/ci.yml`, which
-runs on every push and:
-
-- builds both images;
-- asserts the API image runs as the unprivileged `ews` user, not root;
-- imports `xgboost` and `shap` **inside** the image, which is the check that
-  `libgomp1` survived the two-stage build;
-- asserts no compiler is left in the runtime image;
-- boots the full stack with real PostgreSQL;
-- applies migrations `upgrade → downgrade → upgrade`;
-- checks `/health` answers and carries the security headers, and that HSTS is
-  *absent* over plain HTTP;
-- checks the dashboard serves `index.html` for a client-side route, which is the
-  SPA-fallback bug users hit first.
-
-| Component | Verified where |
+| Component | Verified |
 |---|---|
-| Migration round trip (SQLite) | locally, and in CI |
-| Migration round trip (PostgreSQL 16) | CI `database` job |
-| Frontend production build | locally (255 kB app + 1,097 kB Plotly), and in CI |
+| API image builds | **locally** (`docker compose build api`) |
+| Dashboard image builds | **locally** — built first try, no changes needed |
+| Runs as unprivileged `ews`, not root | **locally** (`id -un` → `ews`) |
+| No compiler in the runtime image | **locally** (`command -v gcc` absent) |
+| `xgboost` + `shap` import inside the image | **locally** (xgboost 3.2.0, shap 0.49.1) |
+| Full stack boots, all three healthy | **locally** (`api`, `dashboard`, `db` all `healthy`) |
+| `/health` reports `status: ok`, `model_loaded: true` | **locally** |
+| Security headers present, HSTS absent over HTTP | **locally** |
+| **A real scoring request inside a container** | **locally** — see below |
+| Clean `--no-cache` rebuild of both images | **locally** |
+| Dashboard SPA fallback (`/students/ABC-123` → 200) | **locally** |
+| Migration round trip (SQLite) | locally |
+| Migration round trip (PostgreSQL 16) | **locally** (`postgres:16-alpine`) and CI `database` job |
+| Full integration suite on PostgreSQL 16 | **locally — 65 passed, 0 skipped** |
+| Frontend production build | locally (255 kB app + 1,097 kB Plotly) and CI |
 | Config validation & security headers | locally, 20 tests in `tests/api/test_deployment_hardening.py` |
-| Image builds, non-root, stack boot | **CI only — never run by the author** |
-| Scoring a request inside a container | **not verified anywhere** (see below) |
 
-The gap worth naming: the CI smoke test deliberately runs **without a trained
-model**. `load_state()` records a load error rather than raising, so the API boots
-and `/health` honestly reports `degraded`. That proves the image runs and the
-stack wires together. It does **not** prove that a scoring request works in a
-container, because `models/` is not committed. Do not read a green CI badge as
-more than it is.
+### The gap that is now closed
+
+The CI `containers` job runs **without a trained model**, because `models/` is not
+committed: the API boots and `/health` honestly reports `degraded`. That proved
+the image ran and the stack wired together, but never that the system could
+actually *score* in a container. `FUTURE_WORK.md` listed closing that as item 7.
+
+It is closed. With `models/` and `data/` mounted, the containerised API returns a
+full SHAP-explained prediction — probability 0.3333, `critical` band, 6 risk
+factors, 3 protective, 3 contextual, `is_calibrated: true`, model version and
+disclaimer attached. The cohort figures served from the container match the
+non-container run exactly: 7,848 students, 43,407 scored checkpoints, identical
+band counts.
+
+CI remains the model-free smoke test. It is still useful — it catches image and
+wiring regressions on a machine with no artifacts — but it is no longer the only
+verification.
+
+Docker also unblocked the one test that had always skipped. Against a throwaway
+`postgres:16-alpine`, `pytest tests/integration -m integration` gives **65
+passed, 0 skipped**, so JSONB behaviour, the partial-index predicate, server-side
+defaults and PostgreSQL's stricter type coercion are now genuinely checked rather
+than deferred to CI. The migration round trip also reports *transactional* DDL on
+PostgreSQL where SQLite reports non-transactional, which means the downgrade path
+is exercised rather than assumed.
+
+Both images were finally rebuilt with `--no-cache` from a torn-down state, so
+what is committed builds from scratch rather than from a warm layer cache.
+
+---
+
+## Four bugs that only a real build could find
+
+Every one of these produced a *healthy-looking* failure. That is the argument for
+having built it rather than reviewed it.
+
+### 1. The builder stage omitted a declared package
+
+```
+error: package directory 'backend' does not exist
+ERROR: Failed to build 'file:///build' when getting requirements to build wheel
+```
+
+`pyproject.toml` sets `package-dir = { "dropout_ews" = "src/dropout_ews",
+"backend" = "backend" }`. The builder copied only `pyproject.toml`, `README.md`
+and `src/` — an optimisation so the pip layer cached against source edits. Every
+directory `pyproject.toml` declares must be present during
+`prepare_metadata_for_build_wheel`, so setuptools failed, and pip reported it as
+the far less informative "Failed to build … when getting requirements to build
+wheel".
+
+The optimisation was not merely suboptimal, it could not build at all. `backend/`
+is now copied too; editing it invalidates the install layer, which is the correct
+trade, because a cached layer that never builds is worth nothing.
+
+### 2. Paths resolved inside the virtualenv, silently
+
+The worst of the four. `config/settings.py` derived the project root from the
+module location:
+
+```python
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+```
+
+Correct for a source checkout and an editable install. In the image,
+`pip install ".[api]"` copies the package into site-packages, so the same four
+levels up land on `/opt/venv/lib/python3.10` — and `MODELS_DIR` became
+`/opt/venv/lib/python3.10/models`.
+
+The result was not a crash. The container started, passed its healthcheck,
+answered `/health` with HTTP 200, and reported `model_loaded: false` while the
+model sat mounted and readable at `/app/models`. Nothing was logged, because
+`load_state()` captures the `FileNotFoundError` into `load_error` and no code
+path prints it.
+
+`DROPOUT_EWS_ROOT` now makes the root explicit; the image sets it to `/app`.
+Deliberately an environment variable rather than a cwd fallback or a walk-up
+looking for `pyproject.toml` — both guess, and a guessed path fails the same
+silent way. Three tests in `tests/unit/test_config.py` cover it, including that
+`CONFIG_DIR` must keep following the *module*, since `features.yaml` is package
+data that ships inside the wheel.
+
+### 3. Only `data/processed` was mounted
+
+With the paths fixed, `/health` still reported `data_loaded: false`. The
+`parquet` backend reads student and module metadata straight from the raw OULAD
+CSVs, and only `./data/processed` was mounted — so
+`data/raw/oulad/studentRegistration.csv` was missing, and the error was swallowed
+the same way.
+
+Compose now mounts `./data:/app/data:ro`. Still a read-only mount rather than an
+image layer: the OULAD licence is the dataset's, so it must not travel inside a
+distributable image.
+
+### 4. The dashboard healthcheck used an IPv6-resolving name
+
+The dashboard reported `unhealthy` for ten minutes while serving **HTTP 200 to
+the host**. The healthcheck was:
+
+```
+wget -q --spider http://localhost:8080/
+```
+
+The container's `/etc/hosts` maps `localhost` to both `127.0.0.1` and `::1`,
+busybox `wget` tries `::1` first, and `listen 8080` binds IPv4 only. Measured
+inside the container: `localhost` → connection refused, `127.0.0.1` → OK.
+
+Both healthchecks now address `127.0.0.1` explicitly. The alternative fix is
+`listen [::]:8080` in `nginx.conf`; addressing the loopback is narrower than
+changing what the server binds. The API's check had the same latent flaw and
+passed only because `curl` falls back from `::1` where busybox `wget` does not.
+
+### What this says about the CI job
+
+CI would have caught #1 (the build fails outright). It would **not** reliably
+have caught #2 or #3 — it runs with no model and no data and *expects*
+`degraded`, so a path bug is indistinguishable from the intended state. And it
+would have missed #4 entirely, because it curls the dashboard from the host,
+where IPv4 resolution succeeds. Three of the four needed a real run with real
+artifacts.
 
 ---
 

@@ -32,6 +32,6 @@ new ADR that supersedes the old one, rather than an edit.
 
 - `MONITORING.md` — drift detection and the retraining policy, measured on the
   real train/test cohort pair
-- `DEPLOYMENT.md` — containers, configuration, and an explicit table of what is
-  verified where; the container work is verified only in CI
+- `DEPLOYMENT.md` — containers, configuration, a table of what is verified
+  where, and the four healthy-looking bugs the first real build uncovered
 - `FUTURE_WORK.md`

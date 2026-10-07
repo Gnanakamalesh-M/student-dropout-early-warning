@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import fnmatch
 import functools
+import os
 from pathlib import Path
 from typing import Any, Literal
 
@@ -20,9 +21,38 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Repository root, resolved from this file's location:
-# src/dropout_ews/config/settings.py -> up four levels.
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+# Repository root. Derived from this file's location by default --
+# src/dropout_ews/config/settings.py -> up four levels -- which is correct for a
+# source checkout and for an editable install.
+#
+# It is *wrong* for a non-editable install, and that is not hypothetical: in the
+# Docker image `pip install ".[api]"` copies the package into site-packages, so
+# the same four levels up land on `/opt/venv/lib/python3.10` and MODELS_DIR
+# becomes `/opt/venv/lib/python3.10/models`. The container then started cleanly,
+# served /health, and reported `model_loaded: false` -- the model was mounted at
+# /app/models the whole time.
+#
+# DROPOUT_EWS_ROOT makes the root explicit for that case. Deliberately an env var
+# rather than a cwd fallback or a walk-up looking for pyproject.toml: both guess,
+# and a path that is guessed wrong fails the same silent way.
+def _resolve_project_root(env_root: str | None, module_file: Path) -> Path:
+    """Project root from the override if set, else derived from this module.
+
+    Split out as a pure function so it is testable without reloading the module.
+    An earlier test did reload it, which replaced ``get_settings`` -- other
+    modules kept a reference to the old function and its own ``functools.cache``,
+    so an unrelated LLM test failed only when the two ran in the same session.
+    A path helper is not worth that kind of spooky failure.
+    """
+    if env_root:
+        return Path(env_root).resolve()
+    return module_file.resolve().parents[3]
+
+
+PROJECT_ROOT = _resolve_project_root(os.environ.get("DROPOUT_EWS_ROOT"), Path(__file__))
+
+# Always next to this module: config travels with the package, unlike data.
 CONFIG_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = PROJECT_ROOT / "data"

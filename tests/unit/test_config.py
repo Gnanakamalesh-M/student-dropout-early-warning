@@ -8,6 +8,10 @@ classification from silently producing nonsense.
 
 from __future__ import annotations
 
+import os
+import tempfile
+from pathlib import Path
+
 import pytest
 import yaml
 from pydantic import ValidationError
@@ -346,3 +350,101 @@ def test_config_yaml_files_are_parseable_and_shipped_as_package_data() -> None:
         path = CONFIG_DIR / name
         assert path.is_file()
         assert isinstance(yaml.safe_load(path.read_text(encoding="utf-8")), dict)
+
+
+# ---------------------------------------------------------------------------
+# Project-root resolution
+# ---------------------------------------------------------------------------
+
+
+def test_project_root_is_the_repository_root_in_a_source_checkout() -> None:
+    """The default derivation. Correct for a checkout and an editable install."""
+    from dropout_ews.config.settings import DATA_DIR, MODELS_DIR, PROJECT_ROOT
+
+    assert (PROJECT_ROOT / "pyproject.toml").is_file()
+    assert MODELS_DIR == PROJECT_ROOT / "models"
+    assert DATA_DIR == PROJECT_ROOT / "data"
+
+
+def test_the_derivation_walks_four_levels_up_from_the_module() -> None:
+    """src/dropout_ews/config/settings.py -> repository root. Pinned because the
+    count is silently wrong if the module ever moves."""
+    from dropout_ews.config.settings import _resolve_project_root
+
+    module = Path("/repo/src/dropout_ews/config/settings.py")
+    assert _resolve_project_root(None, module) == Path("/repo").resolve()
+
+
+def test_the_derivation_is_wrong_for_a_non_editable_install() -> None:
+    """The bug this override exists for, pinned as a fact rather than prose.
+
+    `pip install ".[api]"` copies the package into site-packages, so the same four
+    levels up land inside the virtualenv. In the Docker image MODELS_DIR became
+    `/opt/venv/lib/python3.10/models`: the container started, passed its
+    healthcheck, served /health, and reported `model_loaded: false` with the model
+    mounted and readable at /app/models the whole time.
+    """
+    from dropout_ews.config.settings import _resolve_project_root
+
+    installed = Path("/opt/venv/lib/python3.10/site-packages/dropout_ews/config/settings.py")
+    derived = _resolve_project_root(None, installed)
+    assert derived == Path("/opt/venv/lib/python3.10").resolve()
+    assert derived.name != "site-packages"  # i.e. nowhere near the real root
+
+
+def test_the_override_wins_over_the_derivation() -> None:
+    from dropout_ews.config.settings import _resolve_project_root
+
+    installed = Path("/opt/venv/lib/python3.10/site-packages/dropout_ews/config/settings.py")
+    assert _resolve_project_root("/app", installed) == Path("/app").resolve()
+
+
+def test_an_empty_override_falls_back_rather_than_resolving_to_cwd() -> None:
+    """`DROPOUT_EWS_ROOT=` in a .env file yields an empty string. Treating that as
+    a path would silently resolve to the working directory."""
+    from dropout_ews.config.settings import _resolve_project_root
+
+    module = Path("/repo/src/dropout_ews/config/settings.py")
+    assert _resolve_project_root("", module) == Path("/repo").resolve()
+
+
+def test_config_dir_follows_the_module_not_the_project_root() -> None:
+    """`features.yaml` and `thresholds.yaml` are package data and ship inside the
+    wheel, so CONFIG_DIR must track the module. Tying it to the overridable root
+    would break the installed package in the one case the override exists to fix.
+    """
+    from dropout_ews.config.settings import CONFIG_DIR
+
+    assert (CONFIG_DIR / "features.yaml").is_file()
+    assert CONFIG_DIR.name == "config"
+    assert CONFIG_DIR.parent.name == "dropout_ews"
+
+
+def test_the_override_takes_effect_in_a_fresh_interpreter() -> None:
+    """The pure function above cannot show that the env var is actually read at
+    import time. A subprocess can, without reloading the module in this one --
+    reloading replaces `get_settings`, and an earlier version of this test broke
+    an unrelated LLM test that way.
+    """
+    import json
+    import subprocess
+    import sys
+
+    env = {**os.environ, "DROPOUT_EWS_ROOT": str(Path(tempfile.gettempdir()) / "ews-root")}
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import json;from dropout_ews.config.settings import PROJECT_ROOT,MODELS_DIR,DATA_DIR;"
+            "print(json.dumps([str(PROJECT_ROOT),str(MODELS_DIR),str(DATA_DIR)]))",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
+    )
+    root, models, data = json.loads(result.stdout)
+    expected = (Path(tempfile.gettempdir()) / "ews-root").resolve()
+    assert Path(root) == expected
+    assert Path(models) == expected / "models"
+    assert Path(data) == expected / "data"

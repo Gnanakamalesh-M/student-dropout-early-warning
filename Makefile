@@ -118,7 +118,7 @@ notebooks: ## Execute the EDA notebooks to check they still run
 		--ExecutePreprocessor.timeout=900 notebooks/*.ipynb > /dev/null
 	@echo "notebooks execute cleanly"
 
-compose-up: ## Build and run the full stack (needs Docker; never run by the author)
+compose-up: ## Build and run the full stack (needs Docker; verified locally)
 	docker compose up --build
 
 compose-down: ## Stop the stack and remove volumes

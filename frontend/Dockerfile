@@ -1,7 +1,7 @@
 # Dashboard image: build with Node, serve the static bundle with nginx.
 #
-# NOT BUILT OR RUN BY ITS AUTHOR — see the note in the root Dockerfile. The
-# `containers` CI job is what verifies this.
+# Built and run locally as well as in CI. The image built first try; its
+# healthcheck did not — see the note on the HEALTHCHECK line below.
 
 FROM node:22-bookworm-slim AS builder
 
@@ -27,4 +27,10 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://localhost:8080/ || exit 1
+    # 127.0.0.1, not localhost: the container's /etc/hosts maps localhost to both
+    # 127.0.0.1 and ::1, busybox wget tries ::1 first, and `listen 8080` binds
+    # IPv4 only -- so the healthcheck failed with "Connection refused" and marked
+    # the container unhealthy while it was serving HTTP 200 to the host the whole
+    # time. The alternative fix is `listen [::]:8080` in nginx.conf; addressing
+    # the loopback explicitly is narrower than changing what the server binds.
+    CMD wget -q --spider http://127.0.0.1:8080/ || exit 1

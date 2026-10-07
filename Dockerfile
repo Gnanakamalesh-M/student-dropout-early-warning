@@ -1,9 +1,10 @@
 # Backend API image.
 #
-# NOT BUILT OR RUN BY ITS AUTHOR. Docker is unavailable on the machine this
-# project was developed on, so this file is verified by the `containers` job in
-# .github/workflows/ci.yml — which builds it and boots the stack — and nowhere
-# else. Treat it as reviewed-but-unexercised until that job has passed.
+# Built and run locally (Docker 29.8.2, Compose v5.5.1) as well as by the
+# `containers` job in .github/workflows/ci.yml. Doing so found two bugs that both
+# produced a healthy-looking container: a declared package missing from the
+# builder stage, and project paths resolving inside the virtualenv. See
+# docs/DEPLOYMENT.md.
 #
 # Python 3.10 matches the pin in pyproject.toml (ADR-0004: SHAP/XGBoost wheels
 # on 3.13+ are unreliable). The digest is not pinned here because Dependabot
@@ -22,10 +23,22 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-# Copy only what defines the dependency set first, so the expensive layer is
-# cached against source edits rather than rebuilt on every commit.
+# Every directory `pyproject.toml` declares as a package must be present, or
+# setuptools fails during `prepare_metadata_for_build_wheel` -- not at import
+# time. `package-dir` maps both `dropout_ews` -> src/dropout_ews and `backend`
+# -> backend, so copying only src/ here failed with "package directory
+# 'backend' does not exist", surfaced by pip as the far less helpful
+# "Failed to build 'file:///build' when getting requirements to build wheel".
+#
+# An earlier version of this file copied only pyproject.toml, README.md and src/
+# to keep the pip layer cached against source edits. That was wrong rather than
+# merely suboptimal: it could not build at all. The cache benefit is narrower
+# now -- editing backend/ invalidates the install layer -- and that is the
+# correct trade, because a cached layer that never builds is worth nothing.
+# README.md is required too: pyproject sets `readme = "README.md"`.
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
+COPY backend/ ./backend/
 RUN python -m venv /opt/venv \
  && /opt/venv/bin/pip install --upgrade pip \
  && /opt/venv/bin/pip install ".[api]"
@@ -42,9 +55,15 @@ RUN apt-get update \
  && useradd --create-home --uid 10001 ews
 
 COPY --from=builder /opt/venv /opt/venv
+# DROPOUT_EWS_ROOT is required, not cosmetic. The package is installed
+# non-editable into site-packages, so the repo-relative derivation of
+# DATA_DIR and MODELS_DIR in config/settings.py resolves inside /opt/venv:
+# the API then starts healthy and reports `model_loaded: false` with the
+# model mounted and readable the whole time.
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    DROPOUT_EWS_ROOT=/app
 
 WORKDIR /app
 COPY --chown=ews:ews src/ ./src/
@@ -60,7 +79,10 @@ EXPOSE 8000
 # `/health` reports readiness including whether the configured repository backend
 # actually resolved, so this is a real check rather than a liveness ping.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://localhost:8000/health || exit 1
+    # 127.0.0.1 for the same reason as the dashboard image: uvicorn --host
+    # 0.0.0.0 binds IPv4 only. curl happens to fall back from ::1, so this one
+    # passed by luck rather than by design.
+    CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
 # No --reload, and workers left at 1 by default: the model is held in memory per
 # worker, so worker count is a memory decision the operator should make with

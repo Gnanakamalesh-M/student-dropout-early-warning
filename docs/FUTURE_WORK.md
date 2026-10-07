@@ -76,16 +76,24 @@ and **it has not been significance-tested**.
 intervals, applied to the per-subgroup calibration gap. Cheap to do and currently
 missing — this is the most obvious hole in the fairness work.
 
-## 7. Verify the containers somewhere the author can see
+## 7. ~~Verify the containers somewhere the author can see~~ — done, mostly
 
-The images are built and booted only by the `containers` CI job, and that job runs
-**without a trained model**, so a scoring request has never executed inside a
-container anywhere. The stack wiring is verified; the thing the stack exists to do
-is not.
+**Closed locally.** Docker Desktop was installed and the stack built and run end
+to end: all three services `healthy`, and a real SHAP-explained scoring request
+served from the container (probability 0.3333, `critical` band, 6 risk factors,
+`is_calibrated: true`), with cohort figures matching the non-container run
+exactly. Building it for the first time found four bugs, all of which produced a
+healthy-looking failure — see `docs/DEPLOYMENT.md`.
 
-**What would settle it:** either a small committed fixture model, or a CI job that
-trains one and then scores through the containerised API. The first is simpler and
-probably right.
+**What remains:** CI still runs the `containers` job without a trained model,
+because `models/` is not committed. So the automated gate proves wiring, not
+scoring, and a path regression of the kind found here would be invisible to it —
+CI expects `degraded` and cannot distinguish that from a broken path.
+
+**What would settle that part:** a small committed fixture model, scored through
+the containerised API in CI, with an assertion on `model_loaded: true` rather
+than on the endpoint merely answering. That is the remaining work; it is smaller
+than it was.
 
 ## 8. Things deliberately left out, with reasons
 
